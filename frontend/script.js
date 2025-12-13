@@ -94,10 +94,21 @@ document.getElementById("clearBtn").addEventListener("click",()=>{
 
 document.getElementById('saveBtn').addEventListener('click', async () => {
   const canvas = document.getElementById('paintCanvas');
+  const statusbar = document.querySelector('.statusbar');
+  const saveBtn = document.getElementById('saveBtn');
+  
+  // Update status
+  if (statusbar) statusbar.textContent = 'Saving...';
+  saveBtn.disabled = true;
+  
   const imageData = canvas.toDataURL('image/png');
   const name = prompt('Name your soup painting:');
   
-  if (!name) return;
+  if (!name) {
+    if (statusbar) statusbar.textContent = 'Ready';
+    saveBtn.disabled = false;
+    return;
+  }
   
   try {
     const response = await fetch('/api/paintings', {
@@ -107,17 +118,42 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     });
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-      throw new Error(errorData.message || `Server error: ${response.status}`);
+      let errorData;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { message: `Server error: ${response.status}` };
+        }
+      } else {
+        const text = await response.text();
+        errorData = { 
+          message: text.includes('MongoDB') || text.includes('Database') 
+            ? 'Database not configured. Please set MONGODB_URI in Vercel environment variables.'
+            : `Server error: ${response.status}`
+        };
+      }
+      throw new Error(errorData.message || errorData.error || `Server error: ${response.status}`);
     }
     
     const result = await response.json();
-    alert('Painting saved!');
+    if (statusbar) statusbar.textContent = 'Painting saved!';
+    alert('Painting saved successfully!');
+    
     // Reload gallery after saving
     loadGallery();
+    
+    // Reset status after 2 seconds
+    setTimeout(() => {
+      if (statusbar) statusbar.textContent = 'Ready';
+    }, 2000);
   } catch (error) {
     console.error('Error saving painting:', error);
+    if (statusbar) statusbar.textContent = 'Error: ' + error.message;
     alert('Error saving: ' + error.message);
+  } finally {
+    saveBtn.disabled = false;
   }
 });
 
@@ -139,10 +175,18 @@ async function loadGallery() {
         const text = await response.text();
         console.error('Non-JSON error response:', text.substring(0, 200));
         errorData = { 
-          message: `Server error: ${response.status}. ${text.includes('MongoDB') || text.includes('Database') ? 'Database connection issue. Please check MONGODB_URI environment variable.' : 'Please check server configuration.'}` 
+          message: text.includes('MongoDB') || text.includes('Database') 
+            ? 'Database not configured. Please set MONGODB_URI in Vercel environment variables.'
+            : `Server error: ${response.status}. Please check server configuration.`
         };
       }
       console.error('Error loading gallery:', errorData);
+      
+      // Show error in gallery if it's open
+      const galleryGrid = document.getElementById('galleryGrid');
+      if (galleryGrid) {
+        galleryGrid.innerHTML = `<div style='color:#f77;padding:12px'>Error: ${errorData.message || errorData.error || 'Failed to load gallery'}</div>`;
+      }
       return;
     }
     
@@ -154,7 +198,7 @@ async function loadGallery() {
     galleryGrid.innerHTML = '';
     
     if (paintings.length === 0) {
-      galleryGrid.innerHTML = "<div style='color:#777;padding:12px'>No soups saved yet.</div>";
+      galleryGrid.innerHTML = "<div style='color:#777;padding:12px'>No soups saved yet. Paint something and click Save!</div>";
       return;
     }
     
@@ -166,6 +210,10 @@ async function loadGallery() {
     });
   } catch (error) {
     console.error('Error loading gallery:', error);
+    const galleryGrid = document.getElementById('galleryGrid');
+    if (galleryGrid) {
+      galleryGrid.innerHTML = `<div style='color:#f77;padding:12px'>Error loading gallery: ${error.message}</div>`;
+    }
   }
 }
 
