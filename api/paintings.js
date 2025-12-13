@@ -2,6 +2,11 @@ import { MongoClient, ObjectId } from 'mongodb';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
+// Validate MongoDB module is available
+if (!MongoClient || !ObjectId) {
+  console.error('MongoDB module not properly imported');
+}
+
 // Helper function to send JSON response
 function sendJson(res, status, data) {
   res.setHeader('Content-Type', 'application/json');
@@ -20,7 +25,10 @@ export default async function handler(req, res) {
       });
     }
 
-    const client = new MongoClient(MONGODB_URI);
+    const client = new MongoClient(MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000, // Timeout after 5 seconds
+      connectTimeoutMS: 5000,
+    });
     
     try {
       await client.connect();
