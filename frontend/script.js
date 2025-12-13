@@ -105,8 +105,18 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageData, name })
     });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      throw new Error(errorData.message || `Server error: ${response.status}`);
+    }
+    
+    const result = await response.json();
     alert('Painting saved!');
+    // Reload gallery after saving
+    loadGallery();
   } catch (error) {
+    console.error('Error saving painting:', error);
     alert('Error saving: ' + error.message);
   }
 });
@@ -114,10 +124,24 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
 async function loadGallery() {
   try {
     const response = await fetch('/api/paintings');
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      console.error('Error loading gallery:', errorData);
+      return;
+    }
+    
     const paintings = await response.json();
     
     const galleryGrid = document.getElementById('galleryGrid');
+    if (!galleryGrid) return;
+    
     galleryGrid.innerHTML = '';
+    
+    if (paintings.length === 0) {
+      galleryGrid.innerHTML = "<div style='color:#777;padding:12px'>No soups saved yet.</div>";
+      return;
+    }
     
     paintings.forEach(painting => {
       const img = document.createElement('img');
@@ -145,11 +169,24 @@ async function openGallery(){
   console.log('Gallery opened');
   try {
     const response = await fetch('/api/paintings');
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      console.error('Error loading gallery:', errorData);
+      galleryGrid.innerHTML="<div style='color:#f77;padding:12px'>Error loading gallery: " + (errorData.message || 'Unknown error') + "</div>";
+      modal.classList.remove("hidden");
+      return;
+    }
+    
     const paintings = await response.json();
     
     galleryGrid.innerHTML = '';
     
-    if(!paintings.length) galleryGrid.innerHTML="<div style='color:#777;padding:12px'>No soups saved yet.</div>";
+    if(!paintings.length) {
+      galleryGrid.innerHTML="<div style='color:#777;padding:12px'>No soups saved yet.</div>";
+      modal.classList.remove("hidden");
+      return;
+    }
     
     paintings.forEach(painting => {
       const box=document.createElement("div"); 
@@ -164,7 +201,7 @@ async function openGallery(){
     modal.classList.remove("hidden");
   } catch (error) {
     console.error('Error loading gallery:', error);
-    galleryGrid.innerHTML="<div style='color:#f77;padding:12px'>Error loading gallery</div>";
+    galleryGrid.innerHTML="<div style='color:#f77;padding:12px'>Error loading gallery: " + error.message + "</div>";
     modal.classList.remove("hidden");
   }
 }

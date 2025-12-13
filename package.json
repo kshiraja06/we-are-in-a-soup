@@ -2,6 +2,7 @@
   "name": "we-are-in-a-soup",
   "version": "1.0.0",
   "description": "Soup painting app",
+  "type": "module",
   "main": "api/paintings.js",
   "scripts": {
     "dev": "vercel dev",
