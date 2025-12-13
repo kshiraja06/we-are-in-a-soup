@@ -126,20 +126,43 @@ export default async function handler(req, res) {
       console.error('API Error:', error);
       console.error('Error name:', error.name);
       console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
       console.error('Error stack:', error.stack);
       
       // Provide more specific error messages
       let errorMessage = error.message || 'An unexpected error occurred';
+      let errorDetails = {};
+      
       if (error.name === 'MongoServerSelectionError') {
         errorMessage = 'Failed to connect to MongoDB. Please check your connection string and network settings.';
+        errorDetails = {
+          hint: 'Check: 1) Connection string is correct, 2) Network Access allows your IP, 3) Database user exists',
+          errorCode: error.code
+        };
       } else if (error.name === 'MongoNetworkError') {
         errorMessage = 'Network error connecting to MongoDB. Please check your internet connection and MongoDB Atlas settings.';
+        errorDetails = {
+          hint: 'Check: 1) Internet connection, 2) MongoDB Atlas is accessible, 3) Network Access settings',
+          errorCode: error.code
+        };
+      } else if (error.name === 'MongoAuthenticationError') {
+        errorMessage = 'Authentication failed. Please check your username and password.';
+        errorDetails = {
+          hint: 'Check: 1) Username is correct, 2) Password is correct (URL-encoded if needed), 3) User has proper permissions'
+        };
+      } else {
+        errorDetails = {
+          errorName: error.name,
+          errorCode: error.code,
+          fullMessage: error.message
+        };
       }
       
       return sendJson(res, 500, { 
         error: 'Internal server error',
         message: errorMessage,
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        ...errorDetails,
+        debug: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     } finally {
       try {
