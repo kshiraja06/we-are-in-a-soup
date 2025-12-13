@@ -25,9 +25,22 @@ export default async function handler(req, res) {
       });
     }
 
-    const client = new MongoClient(MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000, // Timeout after 5 seconds
-      connectTimeoutMS: 5000,
+    // Ensure connection string is properly formatted
+    let connectionString = MONGODB_URI.trim();
+    
+    // For mongodb+srv, ensure retryWrites and w parameters are set
+    if (connectionString.includes('mongodb+srv://')) {
+      // Add retryWrites and w=majority if not present
+      if (!connectionString.includes('retryWrites')) {
+        connectionString += (connectionString.includes('?') ? '&' : '?') + 'retryWrites=true&w=majority';
+      }
+    }
+    
+    const client = new MongoClient(connectionString, {
+      serverSelectionTimeoutMS: 10000, // Timeout after 10 seconds
+      connectTimeoutMS: 10000,
+      maxPoolSize: 10,
+      minPoolSize: 1,
     });
     
     try {
@@ -100,9 +113,22 @@ export default async function handler(req, res) {
       
     } catch (error) {
       console.error('API Error:', error);
+      console.error('Error name:', error.name);
+      console.error('Error code:', error.code);
+      console.error('Error stack:', error.stack);
+      
+      // Provide more specific error messages
+      let errorMessage = error.message || 'An unexpected error occurred';
+      if (error.name === 'MongoServerSelectionError') {
+        errorMessage = 'Failed to connect to MongoDB. Please check your connection string and network settings.';
+      } else if (error.name === 'MongoNetworkError') {
+        errorMessage = 'Network error connecting to MongoDB. Please check your internet connection and MongoDB Atlas settings.';
+      }
+      
       return sendJson(res, 500, { 
         error: 'Internal server error',
-        message: error.message || 'An unexpected error occurred' 
+        message: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     } finally {
       try {
