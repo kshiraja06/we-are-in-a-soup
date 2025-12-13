@@ -91,7 +91,7 @@ document.getElementById("clearBtn").addEventListener("click",()=>{
   ctx.clearRect(0,0,base,base);
   drawBowlOutline();
 });
-// Save painting to database
+
 document.getElementById('saveBtn').addEventListener('click', async () => {
   const canvas = document.getElementById('paintCanvas');
   const imageData = canvas.toDataURL('image/png');
@@ -111,7 +111,6 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   }
 });
 
-// Load paintings from database
 async function loadGallery() {
   try {
     const response = await fetch('/api/paintings');
@@ -142,22 +141,32 @@ function drawBowlOutline(){
 document.getElementById("galleryBtn").addEventListener("click",openGallery);
 const modal=document.getElementById("galleryModal");
 const galleryGrid=document.getElementById("galleryGrid");
-function openGallery(){
+async function openGallery(){
   console.log('Gallery opened');
-  galleryGrid.innerHTML="";
-  const soups=JSON.parse(localStorage.getItem("soups")||"[]").slice().reverse();
-  if(!soups.length) galleryGrid.innerHTML="<div style='color:#777;padding:12px'>No soups saved yet.</div>";
-  soups.forEach(s=>{
-    const box=document.createElement("div"); box.className="thumb";
-    const img=document.createElement("img"); img.src=s.data;
-    const row=document.createElement("div"); row.style.display="flex"; row.style.gap="8px";
-    const dl=document.createElement("button"); dl.className="tool"; dl.textContent="Download";
-    dl.addEventListener("click",()=>{ const a=document.createElement("a"); a.href=s.data; a.download="soup-"+s.id+".png"; a.click(); });
-    const del=document.createElement("button"); del.className="tool"; del.textContent="Delete";
-    del.addEventListener("click",()=>{ let list=JSON.parse(localStorage.getItem("soups")||"[]"); list=list.filter(x=>x.id!==s.id); localStorage.setItem("soups",JSON.stringify(list)); openGallery(); });
-    row.appendChild(dl); row.appendChild(del); box.appendChild(img); box.appendChild(row); galleryGrid.appendChild(box);
-  });
-  modal.classList.remove("hidden");
+  try {
+    const response = await fetch('/api/paintings');
+    const paintings = await response.json();
+    
+    galleryGrid.innerHTML = '';
+    
+    if(!paintings.length) galleryGrid.innerHTML="<div style='color:#777;padding:12px'>No soups saved yet.</div>";
+    
+    paintings.forEach(painting => {
+      const box=document.createElement("div"); 
+      box.className="thumb";
+      const img=document.createElement("img"); 
+      img.src=painting.imageData;
+      img.alt=painting.name;
+      box.appendChild(img); 
+      galleryGrid.appendChild(box);
+    });
+    
+    modal.classList.remove("hidden");
+  } catch (error) {
+    console.error('Error loading gallery:', error);
+    galleryGrid.innerHTML="<div style='color:#f77;padding:12px'>Error loading gallery</div>";
+    modal.classList.remove("hidden");
+  }
 }
 document.getElementById("closeGallery").addEventListener("click",()=>modal.classList.add("hidden"));
 document.getElementById("deleteAll").addEventListener("click",()=>{ if(confirm("Delete all?")){ localStorage.removeItem("soups"); openGallery(); } });
