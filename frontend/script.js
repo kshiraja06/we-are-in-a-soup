@@ -1,0 +1,187 @@
+let canvas, ctx;
+const base=560;
+let dpr=Math.max(window.devicePixelRatio||1,1);
+
+function circleParams(){const cx=base/2,cy=base/2,r=(base/2)-6;return {cx,cy,r}}
+
+function drawBowlOutline(){
+  const {cx,cy,r}=circleParams();
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle="#fff"; ctx.fill();
+}
+
+function initializeCanvas(){
+  canvas=document.getElementById("paintCanvas");
+  ctx=canvas.getContext("2d");
+  dpr=Math.max(window.devicePixelRatio||1,1);
+  canvas.width=base*dpr; canvas.height=base*dpr; canvas.style.width=base+"px"; canvas.style.height=base+"px"; ctx.scale(dpr,dpr);
+  drawBowlOutline();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  initializeCanvas();
+
+let brushSize=12, brushColor="#6b4f9a", mode="brush";
+let painting=false, last={x:0,y:0};
+const paletteColors=["#3b3b3b","#ff6b6b","#ffb86b","#ffd97a","#7bd389","#5fb3ff","#9b7bff","#ffc0cb","#8b5a2b","#ffffff","#c5d6ff","#f6e7ff"];
+const pal=document.getElementById("palette");
+paletteColors.forEach(c=>{const s=document.createElement("div");s.className="pal-swatch";s.style.background=c;s.addEventListener("click",()=>{brushColor=c; document.getElementById("sizeVal").textContent=brushSize});pal.appendChild(s)});
+
+const sizeRange=document.getElementById("sizeRange");
+const sizeVal=document.getElementById("sizeVal");
+sizeRange.addEventListener("input",e=>{brushSize=e.target.value;sizeVal.textContent=brushSize});
+
+const colorWheel=document.getElementById("colorWheel");
+if(colorWheel) colorWheel.addEventListener("input",e=>{brushColor=e.target.value;});
+
+function posFromEvent(e){
+  const r=canvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return {x: clientX - r.left, y: clientY - r.top};
+}
+
+function begin(e){
+  console.log('Begin called, mode:', mode);
+  painting=true;
+  const p=posFromEvent(e);
+  last.x=p.x; last.y=p.y;
+  ctx.beginPath();
+  ctx.moveTo(last.x,last.y);
+  if(mode==="fill"){applyFakeFill(); painting=false}
+}
+
+function end(){painting=false;ctx.beginPath()}
+
+function draw(e){
+  console.log('Draw called, painting:', painting, 'mode:', mode);
+  if(!painting||mode==="fill")return;
+  const p=posFromEvent(e);
+  const {cx,cy,r}=circleParams();
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.clip();
+  ctx.lineWidth=brushSize; ctx.lineCap="round";
+  ctx.strokeStyle = (mode==="eraser") ? "#ffffff" : brushColor;
+  ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke();
+  ctx.restore();
+  last.x=p.x; last.y=p.y;
+}
+
+function applyFakeFill(){
+  const {cx,cy,r}=circleParams();
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.clip();
+  ctx.fillStyle = brushColor;
+  ctx.fillRect(cx-r,cy-r,r*2,r*2);
+  ctx.restore();
+}
+
+canvas.addEventListener("mousedown",begin);
+canvas.addEventListener("touchstart",e=>{e.preventDefault();begin(e)},{passive:false});
+window.addEventListener("mouseup",end);
+canvas.addEventListener("touchend",end);
+canvas.addEventListener("mousemove",draw);
+canvas.addEventListener("touchmove",e=>{e.preventDefault();draw(e)},{passive:false});
+
+console.log('Canvas event listeners attached to canvas:', canvas);
+
+document.getElementById("brushTool").addEventListener("click",()=>{mode="brush"});
+document.getElementById("eraserTool").addEventListener("click",()=>{mode="eraser"});
+document.getElementById("fillTool").addEventListener("click",()=>{mode="fill"});
+document.getElementById("clearBtn").addEventListener("click",()=>{
+  ctx.clearRect(0,0,base,base);
+  drawBowlOutline();
+});
+// Save painting to database
+document.getElementById('saveBtn').addEventListener('click', async () => {
+  const canvas = document.getElementById('paintCanvas');
+  const imageData = canvas.toDataURL('image/png');
+  const name = prompt('Name your soup painting:');
+  
+  if (!name) return;
+  
+  try {
+    const response = await fetch('/api/paintings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageData, name })
+    });
+    alert('Painting saved!');
+  } catch (error) {
+    alert('Error saving: ' + error.message);
+  }
+});
+
+// Load paintings from database
+async function loadGallery() {
+  try {
+    const response = await fetch('/api/paintings');
+    const paintings = await response.json();
+    
+    const galleryGrid = document.getElementById('galleryGrid');
+    galleryGrid.innerHTML = '';
+    
+    paintings.forEach(painting => {
+      const img = document.createElement('img');
+      img.src = painting.imageData;
+      img.alt = painting.name;
+      galleryGrid.appendChild(img);
+    });
+  } catch (error) {
+    console.error('Error loading gallery:', error);
+  }
+}
+
+// Load on startup
+loadGallery();
+
+function drawBowlOutline(){
+  const {cx,cy,r}=circleParams();
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle="#fff"; ctx.fill();
+}
+
+document.getElementById("galleryBtn").addEventListener("click",openGallery);
+const modal=document.getElementById("galleryModal");
+const galleryGrid=document.getElementById("galleryGrid");
+function openGallery(){
+  console.log('Gallery opened');
+  galleryGrid.innerHTML="";
+  const soups=JSON.parse(localStorage.getItem("soups")||"[]").slice().reverse();
+  if(!soups.length) galleryGrid.innerHTML="<div style='color:#777;padding:12px'>No soups saved yet.</div>";
+  soups.forEach(s=>{
+    const box=document.createElement("div"); box.className="thumb";
+    const img=document.createElement("img"); img.src=s.data;
+    const row=document.createElement("div"); row.style.display="flex"; row.style.gap="8px";
+    const dl=document.createElement("button"); dl.className="tool"; dl.textContent="Download";
+    dl.addEventListener("click",()=>{ const a=document.createElement("a"); a.href=s.data; a.download="soup-"+s.id+".png"; a.click(); });
+    const del=document.createElement("button"); del.className="tool"; del.textContent="Delete";
+    del.addEventListener("click",()=>{ let list=JSON.parse(localStorage.getItem("soups")||"[]"); list=list.filter(x=>x.id!==s.id); localStorage.setItem("soups",JSON.stringify(list)); openGallery(); });
+    row.appendChild(dl); row.appendChild(del); box.appendChild(img); box.appendChild(row); galleryGrid.appendChild(box);
+  });
+  modal.classList.remove("hidden");
+}
+document.getElementById("closeGallery").addEventListener("click",()=>modal.classList.add("hidden"));
+document.getElementById("deleteAll").addEventListener("click",()=>{ if(confirm("Delete all?")){ localStorage.removeItem("soups"); openGallery(); } });
+
+document.getElementById("minBtn").addEventListener("click",()=>{ const b=document.querySelector(".body"); b.style.display = (b.style.display==="none") ? "flex" : "none"; document.querySelector(".statusbar").style.display = (b.style.display==="none") ? "none" : "block";});
+document.getElementById("maxBtn").addEventListener("click",()=>{
+  const w=document.querySelector(".win");
+  if(!w.classList.contains("max")){ w.style.position="fixed"; w.style.left="12px"; w.style.top="12px"; w.style.width="calc(100vw - 24px)"; w.style.height="calc(100vh - 24px)"; w.classList.add("max");
+  } else { w.style.width="880px"; w.style.height=""; w.style.left=""; w.style.top=""; w.style.position=""; w.classList.remove("max"); }
+});
+document.getElementById("closeBtn").addEventListener("click",()=>{
+  const paintWindow = document.getElementById("paintWindow");
+  if (paintWindow) {
+    paintWindow.style.display = "none";
+    paintWindow.classList.add("hidden-init");
+  }
+});
+
+let drag=false,off={x:0,y:0};
+const win=document.querySelector(".win"); const title=document.querySelector(".titlebar");
+title.addEventListener("mousedown",(e)=>{ if(e.target.closest(".tbtn")) return; drag=true; const r=win.getBoundingClientRect(); off.x=e.clientX-r.left; off.y=e.clientY-r.top; win.style.transition="none";});
+window.addEventListener("mousemove",(e)=>{ if(!drag) return; win.style.left=(e.clientX-off.x)+"px"; win.style.top=(e.clientY-off.y)+"px"; win.style.position="fixed";});
+window.addEventListener("mouseup",()=>{ drag=false; win.style.transition="box-shadow .2s";});
+
+// Expose initializeCanvas globally for script2.js
+window.initializeCanvas = initializeCanvas;
+});
