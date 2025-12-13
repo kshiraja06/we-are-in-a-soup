@@ -24,9 +24,17 @@ export default async function handler(req, res) {
       console.error('MONGODB_URI environment variable is not set');
       return sendJson(res, 500, { 
         error: 'Database not configured',
-        message: 'MongoDB connection string is missing. Please configure MONGODB_URI environment variable.' 
+        message: 'MongoDB connection string is missing. Please configure MONGODB_URI environment variable.',
+        debug: 'MONGODB_URI is undefined or empty'
       });
     }
+    
+    // Log connection attempt (without sensitive data)
+    console.log('Attempting MongoDB connection...', {
+      hasUri: !!MONGODB_URI,
+      uriLength: MONGODB_URI.length,
+      uriStart: MONGODB_URI.substring(0, 20) + '...'
+    });
 
     // Ensure connection string is properly formatted
     let connectionString = MONGODB_URI.trim();
