@@ -126,7 +126,18 @@ async function loadGallery() {
     const response = await fetch('/api/paintings');
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      let errorData;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { message: `Server error: ${response.status}` };
+        }
+      } else {
+        const text = await response.text();
+        errorData = { message: `Server error: ${response.status}. ${text.substring(0, 100)}` };
+      }
       console.error('Error loading gallery:', errorData);
       return;
     }
@@ -171,7 +182,18 @@ async function openGallery(){
     const response = await fetch('/api/paintings');
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      let errorData;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { message: `Server error: ${response.status}` };
+        }
+      } else {
+        const text = await response.text();
+        errorData = { message: `Server error: ${response.status}. ${text.substring(0, 100)}` };
+      }
       console.error('Error loading gallery:', errorData);
       galleryGrid.innerHTML="<div style='color:#f77;padding:12px'>Error loading gallery: " + (errorData.message || 'Unknown error') + "</div>";
       modal.classList.remove("hidden");
