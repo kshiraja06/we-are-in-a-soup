@@ -11,14 +11,15 @@
 
 *{box-sizing:border-box}
 
-@font-face {
+/* Font file not found - using system monospace font instead */
+/* @font-face {
     font-family: "MyPixelFont";
     src: url("./fonts/pixel.ttf") format("truetype");
-}
+} */
 
 html,body{
   height:100%;margin:0;
-  font-family: "MyPixelFont", monospace;
+  font-family: "Courier New", "Courier", monospace;
   background:var(--bg);
   display:flex;
   align-items:center;

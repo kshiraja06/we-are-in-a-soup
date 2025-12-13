@@ -135,8 +135,12 @@ async function loadGallery() {
           errorData = { message: `Server error: ${response.status}` };
         }
       } else {
+        // Server returned HTML or other non-JSON response
         const text = await response.text();
-        errorData = { message: `Server error: ${response.status}. ${text.substring(0, 100)}` };
+        console.error('Non-JSON error response:', text.substring(0, 200));
+        errorData = { 
+          message: `Server error: ${response.status}. ${text.includes('MongoDB') || text.includes('Database') ? 'Database connection issue. Please check MONGODB_URI environment variable.' : 'Please check server configuration.'}` 
+        };
       }
       console.error('Error loading gallery:', errorData);
       return;
@@ -191,8 +195,14 @@ async function openGallery(){
           errorData = { message: `Server error: ${response.status}` };
         }
       } else {
+        // Server returned HTML or other non-JSON response
         const text = await response.text();
-        errorData = { message: `Server error: ${response.status}. ${text.substring(0, 100)}` };
+        console.error('Non-JSON error response:', text.substring(0, 200));
+        errorData = { 
+          message: text.includes('MongoDB') || text.includes('Database') 
+            ? 'Database connection issue. Please check MONGODB_URI environment variable.' 
+            : `Server error: ${response.status}. Please check server configuration.`
+        };
       }
       console.error('Error loading gallery:', errorData);
       galleryGrid.innerHTML="<div style='color:#f77;padding:12px'>Error loading gallery: " + (errorData.message || 'Unknown error') + "</div>";

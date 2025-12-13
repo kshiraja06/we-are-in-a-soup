@@ -14,6 +14,9 @@ function sendJson(res, status, data) {
 }
 
 export default async function handler(req, res) {
+  // Set JSON content type header first to ensure JSON responses
+  res.setHeader('Content-Type', 'application/json');
+  
   // Ensure we always return JSON, even on errors
   try {
     // Check if MongoDB URI is configured
