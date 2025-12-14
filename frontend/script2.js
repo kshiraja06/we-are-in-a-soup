@@ -1,16 +1,23 @@
 (async () => {
-  // Wait for Three.js to be loaded from CDN
+  // Wait for Three.js to be loaded
+  let attempts = 0;
+  while (!window.THREE && attempts < 50) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    attempts++;
+  }
+  
   if (!window.THREE) {
     console.error('Three.js not loaded');
     return;
   }
   
   const THREE = window.THREE;
-  let GLTFLoader = THREE.GLTFLoader;
+  console.log('THREE loaded:', !!THREE);
+  console.log('THREE.GLTFLoader available:', !!THREE.GLTFLoader);
   
-  if (!GLTFLoader) {
-    console.error('GLTFLoader not found');
-  }
+  // GLTFLoader might be on THREE or window
+  let GLTFLoader = THREE.GLTFLoader || window.GLTFLoader;
+  console.log('GLTFLoader found:', !!GLTFLoader);
 
   const canvas = document.getElementById('canvas');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
