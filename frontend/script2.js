@@ -1,17 +1,12 @@
 (async () => {
-  let THREE;
-  try {
-    THREE = window.THREE || await import('https://unpkg.com/three@0.148.0/build/three.module.js');
-    // Store on window to prevent multiple imports
-    if (!window.THREE) {
-      window.THREE = THREE;
-    }
-  } catch {
+  // Wait for Three.js and GLTFLoader to be loaded from CDN
+  if (!window.THREE) {
+    console.error('Three.js not loaded');
     return;
   }
-
-  // Import GLTFLoader from the same source to avoid multiple Three.js instances
-  const GLTFLoader = await import('https://unpkg.com/three@0.148.0/examples/jsm/loaders/GLTFLoader.js').then(m => m.GLTFLoader);
+  
+  const THREE = window.THREE;
+  const GLTFLoader = window.GLTFLoader;
 
   const canvas = document.getElementById('canvas');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
