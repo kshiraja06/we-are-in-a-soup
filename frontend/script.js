@@ -266,14 +266,18 @@ async function openGallery(){
     console.log('Paintings received in openGallery:', paintings.length, paintings);
     
     galleryGrid.innerHTML = '';
+    console.log('Gallery grid cleared');
     
     if(!paintings.length) {
+      console.log('No paintings found');
       galleryGrid.innerHTML="<div style='color:#777;padding:12px'>No soups saved yet.</div>";
       modal.classList.remove("hidden");
       return;
     }
     
-    paintings.forEach(painting => {
+    console.log('Adding', paintings.length, 'paintings to gallery');
+    paintings.forEach((painting, index) => {
+      console.log('Adding painting', index, ':', painting.name);
       const box=document.createElement("div"); 
       box.className="thumb";
       const img=document.createElement("img"); 
@@ -282,6 +286,7 @@ async function openGallery(){
       box.appendChild(img); 
       galleryGrid.appendChild(box);
     });
+    console.log('All paintings added to DOM');
     
     modal.classList.remove("hidden");
   } catch (error) {

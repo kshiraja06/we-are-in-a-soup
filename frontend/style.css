@@ -335,16 +335,9 @@ input[type=range] {
 }
 
 .modal-foot {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 10px;
+  display: none;
 }
 
 .danger {
-  background: #fff;
-  border: 2px solid #f2dede;
-  color: #a94442;
-  padding: 6px 10px;
-  border-radius: 6px;
-  cursor: pointer;
+  display: none;
 }
