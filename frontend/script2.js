@@ -1,30 +1,13 @@
 (async () => {
-  // Wait for Three.js to be loaded
-  let attempts = 0;
-  while (!window.THREE && attempts < 50) {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    attempts++;
-  }
+  const THREE = window.THREE;
   
-  if (!window.THREE) {
-    console.error('Three.js not loaded after 5 seconds');
-    const msg = document.getElementById('loadingMessage');
-    if (msg) msg.textContent = 'Error: Three.js failed to load from CDN';
+  if (!THREE) {
+    console.error('Three.js not loaded');
     return;
   }
   
-  const THREE = window.THREE;
-  console.log('THREE loaded:', !!THREE);
-  console.log('THREE.GLTFLoader available:', !!THREE.GLTFLoader);
+  console.log('THREE loaded');
   
-  // Remove loading message
-  const msg = document.getElementById('loadingMessage');
-  if (msg) msg.remove();
-  
-  // GLTFLoader might be on THREE or window
-  let GLTFLoader = THREE.GLTFLoader || window.GLTFLoader;
-  console.log('GLTFLoader found:', !!GLTFLoader);
-
   const canvas = document.getElementById('canvas');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio || 1);
@@ -89,10 +72,7 @@
 
   let model;
   try {
-    if (!GLTFLoader) {
-      throw new Error('GLTFLoader not available');
-    }
-    const loader = new GLTFLoader();
+    const loader = new window.THREE.GLTFLoader();
     const assetPath = './assets/claytable.glb';
     console.log('Attempting to load GLB from:', assetPath);
     const gltf = await new Promise((resolve, reject) => {

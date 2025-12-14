@@ -28,14 +28,6 @@
   </style>
 </head>
 <body>
-  <div id="loadingMessage" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #333; color: #fff; padding: 20px; border-radius: 8px; z-index: 9999;">
-    Loading...
-  </div>
-  <script>
-    window.addEventListener('error', (e) => {
-      document.getElementById('loadingMessage').textContent = 'Error: ' + e.message;
-    });
-  </script>
   <canvas id="canvas"></canvas>
 
   <div id="paintWindow" class="win hidden-init">
@@ -94,8 +86,8 @@
   </div>
 
   <link rel="stylesheet" href="./style.css?v=3" />
-  <script src="https://unpkg.com/three@latest/build/three.js"></script>
-  <script src="https://unpkg.com/three@latest/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/GLTFLoader.min.js"></script>
   <script src="./script.js?v=3"></script>
   <script src="./script2.js?v=3"></script>
 </body>
