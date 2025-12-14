@@ -203,10 +203,13 @@ async function loadGallery() {
     }
     
     paintings.forEach(painting => {
+      const box = document.createElement('div');
+      box.className = 'thumb';
       const img = document.createElement('img');
       img.src = painting.imageData;
       img.alt = painting.name;
-      galleryGrid.appendChild(img);
+      box.appendChild(img);
+      galleryGrid.appendChild(box);
     });
   } catch (error) {
     console.error('Error loading gallery:', error);
@@ -286,7 +289,6 @@ async function openGallery(){
   }
 }
 document.getElementById("closeGallery").addEventListener("click",()=>modal.classList.add("hidden"));
-document.getElementById("deleteAll").addEventListener("click",()=>{ if(confirm("Delete all?")){ localStorage.removeItem("soups"); openGallery(); } });
 
 document.getElementById("minBtn").addEventListener("click",()=>{ const b=document.querySelector(".body"); b.style.display = (b.style.display==="none") ? "flex" : "none"; document.querySelector(".statusbar").style.display = (b.style.display==="none") ? "none" : "block";});
 document.getElementById("maxBtn").addEventListener("click",()=>{
