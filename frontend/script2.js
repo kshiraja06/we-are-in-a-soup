@@ -7,13 +7,19 @@
   }
   
   if (!window.THREE) {
-    console.error('Three.js not loaded');
+    console.error('Three.js not loaded after 5 seconds');
+    const msg = document.getElementById('loadingMessage');
+    if (msg) msg.textContent = 'Error: Three.js failed to load from CDN';
     return;
   }
   
   const THREE = window.THREE;
   console.log('THREE loaded:', !!THREE);
   console.log('THREE.GLTFLoader available:', !!THREE.GLTFLoader);
+  
+  // Remove loading message
+  const msg = document.getElementById('loadingMessage');
+  if (msg) msg.remove();
   
   // GLTFLoader might be on THREE or window
   let GLTFLoader = THREE.GLTFLoader || window.GLTFLoader;
