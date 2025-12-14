@@ -88,6 +88,15 @@
   <link rel="stylesheet" href="./style.css?v=3" />
   <script src="https://unpkg.com/three@0.148.0/build/three.min.js"></script>
   <script src="https://unpkg.com/three@0.148.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script>
+    // Ensure GLTFLoader is available globally
+    if (window.THREE && !window.GLTFLoader) {
+      // Try to get it from THREE.examples
+      if (window.THREE.examples && window.THREE.examples.jsm && window.THREE.examples.jsm.loaders) {
+        window.GLTFLoader = window.THREE.examples.jsm.loaders.GLTFLoader;
+      }
+    }
+  </script>
   <script src="./script.js?v=3"></script>
   <script src="./script2.js?v=3"></script>
 </body>

@@ -6,7 +6,17 @@
   }
   
   const THREE = window.THREE;
-  const GLTFLoader = window.GLTFLoader;
+  let GLTFLoader = window.GLTFLoader;
+  
+  // If GLTFLoader isn't available globally, try to get it from THREE.examples
+  if (!GLTFLoader && window.THREE && window.THREE.examples && window.THREE.examples.jsm && window.THREE.examples.jsm.loaders) {
+    GLTFLoader = window.THREE.examples.jsm.loaders.GLTFLoader;
+  }
+  
+  if (!GLTFLoader) {
+    console.error('GLTFLoader not found, using fallback bowl');
+    GLTFLoader = null; // Will use fallback
+  }
 
   const canvas = document.getElementById('canvas');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -72,6 +82,9 @@
 
   let model;
   try {
+    if (!GLTFLoader) {
+      throw new Error('GLTFLoader not available');
+    }
     const loader = new GLTFLoader();
     const assetPath = './assets/claytable.glb';
     console.log('Attempting to load GLB from:', assetPath);
