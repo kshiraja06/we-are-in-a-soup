@@ -242,7 +242,6 @@ async function openGallery(){
       if (contentType && contentType.includes('application/json')) {
         try {
           errorData = await response.json();
-          console.log('Paintings received in openGallery:', paintings.length, paintings);
         } catch (e) {
           errorData = { message: `Server error: ${response.status}` };
         }
@@ -263,6 +262,7 @@ async function openGallery(){
     }
     
     const paintings = await response.json();
+    console.log('Paintings received in openGallery:', paintings.length, paintings);
     
     galleryGrid.innerHTML = '';
     
