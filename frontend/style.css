@@ -344,22 +344,6 @@ input[type=range] {
   max-width: 100%;
 }
 
-.download-btn {
-  padding: 6px 12px;
-  background: #7bd389;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 11px;
-  color: #fff;
-  transition: background 0.2s;
-}
-
-.download-btn:hover {
-  background: #5fa86f;
-}
-
 .modal-foot {
   display: none;
 }
