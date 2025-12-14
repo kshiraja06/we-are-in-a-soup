@@ -72,7 +72,14 @@
 
   let model;
   try {
-    const loader = new window.THREE.GLTFLoader();
+    // Try to get GLTFLoader - it might be exposed different ways
+    let GLTFLoaderClass = window.THREE?.GLTFLoader || window.GLTFLoader;
+    
+    if (!GLTFLoaderClass) {
+      throw new Error('GLTFLoader not available');
+    }
+    
+    const loader = new GLTFLoaderClass();
     const assetPath = './assets/claytable.glb';
     console.log('Attempting to load GLB from:', assetPath);
     const gltf = await new Promise((resolve, reject) => {
