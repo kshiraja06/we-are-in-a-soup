@@ -235,6 +235,7 @@ async function openGallery(){
   const galleryGrid=document.getElementById("galleryGrid");
   try {
     const response = await fetch('/api/paintings');
+    console.log('Response status:', response.status, response.ok);
     
     if (!response.ok) {
       let errorData;
