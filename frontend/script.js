@@ -219,8 +219,20 @@ async function loadGallery() {
       const nameEl = document.createElement('div');
       nameEl.className = 'thumb-name';
       nameEl.textContent = painting.name;
+      const downloadBtn = document.createElement('button');
+      downloadBtn.textContent = '⬇ Download';
+      downloadBtn.className = 'download-btn';
+      downloadBtn.addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.href = painting.imageData;
+        link.download = painting.name + '.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
       box.appendChild(img);
       box.appendChild(nameEl);
+      box.appendChild(downloadBtn);
       galleryGrid.appendChild(box);
     });
     console.log('loadGallery() complete - initial gallery populated');
@@ -299,8 +311,20 @@ async function openGallery(){
       const nameEl=document.createElement("div");
       nameEl.className="thumb-name";
       nameEl.textContent=painting.name;
+      const downloadBtn = document.createElement('button');
+      downloadBtn.textContent = '⬇ Download';
+      downloadBtn.className = 'download-btn';
+      downloadBtn.addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.href = painting.imageData;
+        link.download = painting.name + '.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
       box.appendChild(img);
       box.appendChild(nameEl);
+      box.appendChild(downloadBtn);
       galleryGrid.appendChild(box);
     });
     console.log('All paintings added to DOM');
