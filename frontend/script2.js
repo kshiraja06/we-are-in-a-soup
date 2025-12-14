@@ -74,7 +74,7 @@
   try {
     const loader = new GLTFLoader();
     const gltf = await new Promise((resolve, reject) => {
-      loader.load('./assets/claytable.glb', resolve, undefined, reject);
+      loader.load('/assets/claytable.glb', resolve, undefined, reject);
     });
     model = gltf.scene;
     console.log('Model loaded successfully:', model);
