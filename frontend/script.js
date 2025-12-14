@@ -229,10 +229,10 @@ function drawBowlOutline(){
 }
 
 document.getElementById("galleryBtn").addEventListener("click",openGallery);
-const modal=document.getElementById("galleryModal");
-const galleryGrid=document.getElementById("galleryGrid");
 async function openGallery(){
   console.log('Gallery opened');
+  const modal=document.getElementById("galleryModal");
+  const galleryGrid=document.getElementById("galleryGrid");
   try {
     const response = await fetch('/api/paintings');
     
@@ -242,6 +242,7 @@ async function openGallery(){
       if (contentType && contentType.includes('application/json')) {
         try {
           errorData = await response.json();
+          console.log('Paintings received in openGallery:', paintings.length, paintings);
         } catch (e) {
           errorData = { message: `Server error: ${response.status}` };
         }
