@@ -216,7 +216,11 @@ async function loadGallery() {
       const img = document.createElement('img');
       img.src = painting.imageData;
       img.alt = painting.name;
+      const nameEl = document.createElement('div');
+      nameEl.className = 'thumb-name';
+      nameEl.textContent = painting.name;
       box.appendChild(img);
+      box.appendChild(nameEl);
       galleryGrid.appendChild(box);
     });
     console.log('loadGallery() complete - initial gallery populated');
@@ -292,7 +296,11 @@ async function openGallery(){
       const img=document.createElement("img"); 
       img.src=painting.imageData;
       img.alt=painting.name;
-      box.appendChild(img); 
+      const nameEl=document.createElement("div");
+      nameEl.className="thumb-name";
+      nameEl.textContent=painting.name;
+      box.appendChild(img);
+      box.appendChild(nameEl);
       galleryGrid.appendChild(box);
     });
     console.log('All paintings added to DOM');
@@ -304,7 +312,7 @@ async function openGallery(){
     modal.classList.remove("hidden");
   }
 }
-document.getElementById("closeGallery").addEventListener("click",()=>modal.classList.add("hidden"));
+document.getElementById("closeGallery").addEventListener("click",()=>{const modal=document.getElementById("galleryModal"); modal.classList.add("hidden");});
 
 document.getElementById("minBtn").addEventListener("click",()=>{ const w=document.getElementById("paintWindow"); w.style.display = (w.style.display==="none") ? "flex" : "none"; });
 document.getElementById("maxBtn").addEventListener("click",()=>{

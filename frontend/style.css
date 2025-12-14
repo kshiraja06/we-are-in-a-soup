@@ -19,7 +19,7 @@
 
 html,body{
   height:100%;margin:0;
-  font-family: "Courier New", "Courier", monospace;
+  font-family: "MS Serif", "Georgia", serif;
   background:var(--bg);
   display:flex;
   align-items:center;
@@ -308,7 +308,7 @@ input[type=range] {
 
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
   padding-top: 12px;
   max-height: 56vh;
@@ -328,11 +328,20 @@ input[type=range] {
 }
 
 .thumb img {
-  width: 80px;
-  height: 80px;
+  width: 150px;
+  height: 150px;
   border-radius: 4px;
   object-fit: cover;
   border: 1px solid #ddd;
+}
+
+.thumb-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: center;
+  word-wrap: break-word;
+  max-width: 100%;
 }
 
 .modal-foot {
