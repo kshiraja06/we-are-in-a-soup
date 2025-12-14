@@ -160,7 +160,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
 async function loadGallery() {
   try {
     console.log('loadGallery() called at startup');
-    const response = await fetch('/api/paintings');
+    const response = await fetch('/api/paintings?t=' + Date.now());
     console.log('Fetch response status:', response.status);
     
     if (!response.ok) {
@@ -247,7 +247,7 @@ async function openGallery(){
   const modal=document.getElementById("galleryModal");
   const galleryGrid=document.getElementById("galleryGrid");
   try {
-    const response = await fetch('/api/paintings');
+    const response = await fetch('/api/paintings?t=' + Date.now());
     console.log('Response status:', response.status, response.ok);
     
     if (!response.ok) {

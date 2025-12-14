@@ -2,6 +2,15 @@
   "buildCommand": "echo 'No build needed'",
   "headers": [
     {
+      "source": "/api/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/index.html",
       "headers": [
         {
