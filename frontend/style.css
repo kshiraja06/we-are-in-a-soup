@@ -316,6 +316,7 @@ input[type=range] {
 }
 
 .thumb {
+  width: 100%;
   background: #faf9f7;
   padding: 8px;
   border-radius: 6px;

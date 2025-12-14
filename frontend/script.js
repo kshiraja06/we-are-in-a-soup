@@ -159,7 +159,9 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
 
 async function loadGallery() {
   try {
+    console.log('loadGallery() called at startup');
     const response = await fetch('/api/paintings');
+    console.log('Fetch response status:', response.status);
     
     if (!response.ok) {
       let errorData;
@@ -191,18 +193,24 @@ async function loadGallery() {
     }
     
     const paintings = await response.json();
+    console.log('Paintings loaded in loadGallery():', paintings.length, paintings);
     
     const galleryGrid = document.getElementById('galleryGrid');
-    if (!galleryGrid) return;
+    if (!galleryGrid) {
+      console.log('galleryGrid element not found on startup');
+      return;
+    }
     
     galleryGrid.innerHTML = '';
     
     if (paintings.length === 0) {
+      console.log('No paintings in loadGallery, showing empty message');
       galleryGrid.innerHTML = "<div style='color:#777;padding:12px'>No soups saved yet. Paint something and click Save!</div>";
       return;
     }
     
-    paintings.forEach(painting => {
+    console.log('Adding', paintings.length, 'paintings to initial gallery');
+    paintings.forEach((painting, idx) => {
       const box = document.createElement('div');
       box.className = 'thumb';
       const img = document.createElement('img');
@@ -211,6 +219,7 @@ async function loadGallery() {
       box.appendChild(img);
       galleryGrid.appendChild(box);
     });
+    console.log('loadGallery() complete - initial gallery populated');
   } catch (error) {
     console.error('Error loading gallery:', error);
     const galleryGrid = document.getElementById('galleryGrid');
