@@ -1,21 +1,15 @@
 (async () => {
-  // Wait for Three.js and GLTFLoader to be loaded from CDN
+  // Wait for Three.js to be loaded from CDN
   if (!window.THREE) {
     console.error('Three.js not loaded');
     return;
   }
   
   const THREE = window.THREE;
-  let GLTFLoader = window.GLTFLoader;
-  
-  // If GLTFLoader isn't available globally, try to get it from THREE.examples
-  if (!GLTFLoader && window.THREE && window.THREE.examples && window.THREE.examples.jsm && window.THREE.examples.jsm.loaders) {
-    GLTFLoader = window.THREE.examples.jsm.loaders.GLTFLoader;
-  }
+  let GLTFLoader = THREE.GLTFLoader;
   
   if (!GLTFLoader) {
-    console.error('GLTFLoader not found, using fallback bowl');
-    GLTFLoader = null; // Will use fallback
+    console.error('GLTFLoader not found');
   }
 
   const canvas = document.getElementById('canvas');
