@@ -290,7 +290,7 @@ async function openGallery(){
 }
 document.getElementById("closeGallery").addEventListener("click",()=>modal.classList.add("hidden"));
 
-document.getElementById("minBtn").addEventListener("click",()=>{ const b=document.querySelector(".body"); b.style.display = (b.style.display==="none") ? "flex" : "none"; document.querySelector(".statusbar").style.display = (b.style.display==="none") ? "none" : "block";});
+document.getElementById("minBtn").addEventListener("click",()=>{ const w=document.getElementById("paintWindow"); w.style.display = (w.style.display==="none") ? "flex" : "none"; });
 document.getElementById("maxBtn").addEventListener("click",()=>{
   const w=document.querySelector(".win");
   if(!w.classList.contains("max")){ w.style.position="fixed"; w.style.left="12px"; w.style.top="12px"; w.style.width="calc(100vw - 24px)"; w.style.height="calc(100vh - 24px)"; w.classList.add("max");
