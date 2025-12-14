@@ -73,8 +73,10 @@
   let model;
   try {
     const loader = new GLTFLoader();
+    const assetPath = './assets/claytable.glb';
+    console.log('Attempting to load GLB from:', assetPath);
     const gltf = await new Promise((resolve, reject) => {
-      loader.load('/assets/claytable.glb', resolve, undefined, reject);
+      loader.load(assetPath, resolve, undefined, reject);
     });
     model = gltf.scene;
     console.log('Model loaded successfully:', model);
@@ -93,6 +95,7 @@
     console.log('Model added to scene');
   } catch (error) {
     console.error('Failed to load GLB model:', error);
+    console.error('Error details:', error.message, error.stack);
     const deskGeometry = new THREE.BoxGeometry(2.5, 1, 1.5);
     const deskMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
     const desk = new THREE.Mesh(deskGeometry, deskMaterial);
