@@ -308,7 +308,7 @@ input[type=range] {
 
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 12px;
   padding-top: 12px;
   max-height: 56vh;
@@ -328,8 +328,8 @@ input[type=range] {
 }
 
 .thumb img {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   border-radius: 4px;
   object-fit: cover;
   border: 1px solid #ddd;
