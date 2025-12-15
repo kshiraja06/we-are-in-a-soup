@@ -142,7 +142,7 @@
       )
     );
     claytable = claytableGltf.scene;
-    claytable.position.set(0, -0.85, 0);
+    claytable.position.set(3, 1.5, 7.2);
     claytable.scale.setScalar(0.15);
     claytable.traverse(m => {
       if (m.isMesh) {
