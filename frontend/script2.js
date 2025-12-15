@@ -147,7 +147,7 @@
     );
     claytable = claytableGltf.scene;
     // Reposition table: down (lower Y), forward (further -Z), and left (negative X)
-    claytable.position.set(-4, -1.0, -8);
+    claytable.position.set(21,-2,-35);
     // Even larger table scale
     claytable.scale.setScalar(0.6);
     claytable.traverse(m => {
