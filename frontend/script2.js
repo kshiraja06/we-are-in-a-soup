@@ -3,7 +3,7 @@
   if (!THREE) return;
 
   // Constants
-  const ROOM = { W: 20, H: 6, D: 20, EYE_HEIGHT: 0.9, SPEED: 3 };
+  const ROOM = { W: 20, H: 6, D: 20, EYE_HEIGHT: 1.5, SPEED: 3 };
   const PLAYER = { SIZE: new THREE.Vector3(0.6, 1.7, 0.6), RADIUS: 0.3 };
   const SENSITIVITY = 0.002;
 
@@ -22,69 +22,45 @@
   // Camera controls
   let yaw = 0, pitch = 0;
 
-  // Build room
-  const pastel = [0xf7c5cc, 0xc6e2ff, 0xfff4c2, 0xd7ffd9];
-  const createWall = (w, h, color) => new THREE.Mesh(
-    new THREE.PlaneGeometry(w, h),
-    new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide })
-  );
-
-  const walls = [
-    { obj: createWall(ROOM.W, ROOM.H, pastel[0]), pos: [0, ROOM.H / 2, -ROOM.D / 2], rot: 0 },
-    { obj: createWall(ROOM.W, ROOM.H, pastel[1]), pos: [0, ROOM.H / 2, ROOM.D / 2], rot: Math.PI },
-    { obj: createWall(ROOM.D, ROOM.H, pastel[2]), pos: [-ROOM.W / 2, ROOM.H / 2, 0], rot: Math.PI / 2 },
-    { obj: createWall(ROOM.D, ROOM.H, pastel[3]), pos: [ROOM.W / 2, ROOM.H / 2, 0], rot: -Math.PI / 2 }
-  ];
-  walls.forEach(({ obj, pos, rot }) => {
-    obj.position.set(...pos);
-    obj.rotation.y = rot;
-    scene.add(obj);
-  });
-
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(ROOM.W, ROOM.D),
-    new THREE.MeshStandardMaterial({ color: 0xf8f4e3 })
-  );
-  floor.rotation.x = -Math.PI / 2;
-  floor.receiveShadow = true;
-  scene.add(floor);
-
   // Lighting
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
-  const dir = new THREE.DirectionalLight(0xffffff, 0.8);
-  dir.position.set(5, 10, 5);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.8));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+  dir.position.set(10, 15, 10);
   dir.castShadow = true;
   scene.add(dir);
 
   let model;
-  let modelBox = new THREE.Box3();
+  let meshColliders = [];
 
   try {
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
     const gltf = await new Promise((res, rej) =>
-      new GLTFLoader().load("./assets/claytable.glb", res, undefined, rej)
+      new GLTFLoader().load("./assets/classroom.glb", res, undefined, rej)
     );
     model = gltf.scene;
-    model.position.set(10, -1.3, -5);
-    model.scale.setScalar(0.4);
     model.traverse(m => {
       if (m.isMesh) {
         m.castShadow = true;
         m.receiveShadow = true;
-        m.material.roughness = 0.6;
-        m.material.metalness = 0.1;
+        if (m.material) {
+          m.material.roughness = 0.5;
+          m.material.metalness = 0.1;
+        }
+        // Create individual bounding box for each mesh
+        const box = new THREE.Box3().setFromObject(m);
+        meshColliders.push(box);
       }
     });
     scene.add(model);
-    modelBox.setFromObject(model);
   } catch {
     model = new THREE.Mesh(
-      new THREE.BoxGeometry(2.5, 1, 1.5),
-      new THREE.MeshStandardMaterial({ color: 0x8b4513 })
+      new THREE.BoxGeometry(20, 6, 20),
+      new THREE.MeshStandardMaterial({ color: 0x8b8b8b })
     );
-    model.position.set(0, 0.5, 0);
+    model.position.set(0, 3, 0);
     scene.add(model);
-    modelBox.setFromObject(model);
+    const box = new THREE.Box3().setFromObject(model);
+    meshColliders.push(box);
   }
 
   // Input
@@ -94,16 +70,11 @@
   let isDown = false;
   let lastX = 0, lastY = 0;
 
-  const player = new THREE.Vector3(8, ROOM.EYE_HEIGHT, 8);
+  const player = new THREE.Vector3(0, ROOM.EYE_HEIGHT, 5);
   const playerBox = new THREE.Box3();
 
   window.addEventListener("keydown", e => (keys[e.code] = true));
   window.addEventListener("keyup", e => (keys[e.code] = false));
-
-  const clamp = pos => {
-    pos.x = Math.max(-ROOM.W / 2 + PLAYER.RADIUS, Math.min(ROOM.W / 2 - PLAYER.RADIUS, pos.x));
-    pos.z = Math.max(-ROOM.D / 2 + PLAYER.RADIUS, Math.min(ROOM.D / 2 - PLAYER.RADIUS, pos.z));
-  };
 
   canvas.addEventListener("click", e => {
     const r = canvas.getBoundingClientRect();
@@ -118,6 +89,11 @@
       }
     }
   });
+
+  const clamp = pos => {
+    pos.x = Math.max(-15, Math.min(15, pos.x));
+    pos.z = Math.max(-15, Math.min(15, pos.z));
+  };
 
   canvas.addEventListener("pointerdown", e => {
     isDown = true;
@@ -180,9 +156,17 @@
       clamp(next);
 
       playerBox.setFromCenterAndSize(new THREE.Vector3(next.x, 0.9, next.z), PLAYER.SIZE);
-      modelBox.setFromObject(model);
 
-      if (!playerBox.intersectsBox(modelBox)) {
+      // Check collision against all mesh colliders
+      let colliding = false;
+      for (let box of meshColliders) {
+        if (playerBox.intersectsBox(box)) {
+          colliding = true;
+          break;
+        }
+      }
+
+      if (!colliding) {
         player.copy(next);
       }
     }
