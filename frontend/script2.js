@@ -10,7 +10,7 @@
   document.body.appendChild(debugOverlay);
 
   // Constants
-  const ROOM = { W: 20, H: 6, D: 20, EYE_HEIGHT: 1.5, SPEED: 3 };
+  const ROOM = { W: 20, H: 6, D: 20, EYE_HEIGHT: 1.0, SPEED: 3 };
   const PLAYER = { SIZE: new THREE.Vector3(0.6, 1.7, 0.6), RADIUS: 0.3 };
   const SENSITIVITY = 0.002;
 
@@ -143,7 +143,7 @@
     );
     claytable = claytableGltf.scene;
     claytable.position.set(6, -0.5, -11);
-    claytable.scale.setScalar(0.23);
+    claytable.scale.setScalar(0.22);
     claytable.traverse(m => {
       if (m.isMesh) {
         m.castShadow = true;
