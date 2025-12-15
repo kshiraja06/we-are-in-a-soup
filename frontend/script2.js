@@ -3,6 +3,12 @@
   const THREE = window.THREE;
   if (!THREE) return;
 
+  // Create debug overlay
+  const debugOverlay = document.createElement('div');
+  debugOverlay.id = 'debugOverlay';
+  debugOverlay.style.cssText = 'position:fixed;top:10px;left:10px;background:rgba(0,0,0,0.7);color:#0f0;font-family:monospace;font-size:12px;padding:10px;z-index:999;border:1px solid #0f0';
+  document.body.appendChild(debugOverlay);
+
   // Constants
   const ROOM = { W: 20, H: 6, D: 20, EYE_HEIGHT: 1.5, SPEED: 3 };
   const PLAYER = { SIZE: new THREE.Vector3(0.6, 1.7, 0.6), RADIUS: 0.3 };
@@ -84,16 +90,14 @@
   const player = new THREE.Vector3(0, 1.5, 0);
   const playerBox = new THREE.Box3();
 
-  window.addEventListener("keydown", e => {
-    const key = e.key.toLowerCase();
-    keys[key] = true;
+  document.addEventListener("keydown", e => {
+    keys[e.key.toLowerCase()] = true;
     keys[e.code] = true;
-  });
-  window.addEventListener("keyup", e => {
-    const key = e.key.toLowerCase();
-    keys[key] = false;
+  }, true);
+  document.addEventListener("keyup", e => {
+    keys[e.key.toLowerCase()] = false;
     keys[e.code] = false;
-  });
+  }, true);
 
   canvas.addEventListener("click", e => {
     const r = canvas.getBoundingClientRect();
@@ -147,6 +151,9 @@
   const animate = t => {
     const dt = Math.min(0.05, (t - prev) / 1000);
     prev = t;
+
+    // Update debug overlay
+    debugOverlay.innerHTML = `w:${keys['w']?1:0} a:${keys['a']?1:0} s:${keys['s']?1:0} d:${keys['d']?1:0}<br>pos:${player.x.toFixed(1)},${player.z.toFixed(1)}<br>colliders:${meshColliders.length}`;
 
     if (document.getElementById("paintWindow")?.style.display === "flex") {
       renderer.render(scene, camera);
