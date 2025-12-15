@@ -71,6 +71,9 @@
 
   let model;
   let modelBox = new THREE.Box3();
+  const boxHelper = new THREE.Box3Helper(modelBox, 0xff0000);
+  scene.add(boxHelper);
+
 
   try {
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
@@ -199,11 +202,12 @@
       clamp(next);
 
       playerBox.setFromCenterAndSize(
-        new THREE.Vector3(next.x, eyeHeight * 0.5, next.z),
+        new THREE.Vector3(next.x, 0.9, next.z),
         playerSize
       );
 
       modelBox.setFromObject(model);
+      boxHelper.box.copy(modelBox);
 
       if (!playerBox.intersectsBox(modelBox)) {
         player.copy(next);
