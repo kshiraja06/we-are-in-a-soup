@@ -311,6 +311,7 @@
           }
         }
       }
+    }
 
     player.y = eyeHeight;
 
