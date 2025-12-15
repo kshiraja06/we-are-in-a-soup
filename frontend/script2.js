@@ -71,8 +71,9 @@
 
   let model;
   let modelBox = new THREE.Box3();
-  const boxHelper = new THREE.Box3Helper(modelBox, 0xff0000);
-  scene.add(boxHelper);
+  // Collision box helper - comment out to hide the red visualization
+  // const boxHelper = new THREE.Box3Helper(modelBox, 0xff0000);
+  // scene.add(boxHelper);
 
 
   try {
@@ -189,6 +190,13 @@
     const forward = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
     const strafe = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
 
+    // Camera pan controls with arrow keys
+    if (keys.ArrowUp) pitch += 1.8 * dt;
+    if (keys.ArrowDown) pitch -= 1.8 * dt;
+    if (keys.ArrowLeft) yaw += 1.8 * dt;
+    if (keys.ArrowRight) yaw -= 1.8 * dt;
+    pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+
     if (forward || strafe) {
       const sin = Math.sin(yaw);
       const cos = Math.cos(yaw);
@@ -207,7 +215,7 @@
       );
 
       modelBox.setFromObject(model);
-      boxHelper.box.copy(modelBox);
+      // boxHelper.box.copy(modelBox);
 
       if (!playerBox.intersectsBox(modelBox)) {
         player.copy(next);
