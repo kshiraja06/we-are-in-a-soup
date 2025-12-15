@@ -37,12 +37,30 @@
 
   try {
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
+    console.log('Loading classroom.glb...');
     const gltf = await new Promise((res, rej) =>
-      new GLTFLoader().load("./assets/classroom.glb", res, undefined, rej)
+      new GLTFLoader().load(
+        "./assets/classroom.glb",
+        (data) => {
+          console.log('Successfully loaded classroom.glb');
+          res(data);
+        },
+        (progress) => {
+          console.log('Loading progress:', progress.loaded / progress.total * 100 + '%');
+        },
+        (err) => {
+          console.error('Error loading classroom.glb:', err);
+          rej(err);
+        }
+      )
     );
     model = gltf.scene;
+    console.log('Model scene:', model);
+    console.log('Model children:', model.children.length);
+    
     model.traverse(m => {
       if (m.isMesh) {
+        console.log('Found mesh:', m.name);
         m.castShadow = true;
         m.receiveShadow = true;
         if (m.material) {
@@ -54,8 +72,11 @@
         meshColliders.push(box);
       }
     });
+    console.log('Total mesh colliders:', meshColliders.length);
     scene.add(model);
-  } catch {
+    console.log('Model added to scene');
+  } catch (err) {
+    console.error('Failed to load classroom.glb, using fallback box');
     model = new THREE.Mesh(
       new THREE.BoxGeometry(20, 6, 20),
       new THREE.MeshStandardMaterial({ color: 0x8b8b8b })
