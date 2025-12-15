@@ -93,8 +93,8 @@
       )
     );
     claytable = claytableGltf.scene;
-    claytable.position.set(4.3,2-6.9);
-    claytable.scale.setScalar(0.15)
+    claytable.position.set(0, -0.85, 0);
+    claytable.scale.setScalar(0.15);
     claytable.traverse(m => {
       if (m.isMesh) {
         m.castShadow = true;
@@ -228,8 +228,18 @@
 
       playerBox.setFromCenterAndSize(new THREE.Vector3(next.x, 0.9, next.z), new THREE.Vector3(0.5, 1.7, 0.5));
 
-      // Collision disabled for now - allow free movement
-      player.copy(next);
+      // Check collision against all mesh colliders
+      let colliding = false;
+      for (let box of meshColliders) {
+        if (playerBox.intersectsBox(box)) {
+          colliding = true;
+          break;
+        }
+      }
+
+      if (!colliding) {
+        player.copy(next);
+      }
     }
 
     camera.position.set(player.x, ROOM.EYE_HEIGHT, player.z);
