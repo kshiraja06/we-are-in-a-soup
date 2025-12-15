@@ -93,8 +93,8 @@
       )
     );
     claytable = claytableGltf.scene;
-    claytable.position.set(0, -0.85, 0);
-    claytable.scale.setScalar(0.15);
+    claytable.position.set(8, -0.8, -5);
+    claytable.scale.setScalar(0.15)
     claytable.traverse(m => {
       if (m.isMesh) {
         m.castShadow = true;
@@ -198,7 +198,7 @@
     prev = t;
 
     // Update debug overlay
-    debugOverlay.innerHTML = `w:${keys['w']?1:0} a:${keys['a']?1:0} s:${keys['s']?1:0} d:${keys['d']?1:0}<br>pos:${player.x.toFixed(1)},${player.z.toFixed(1)}<br>colliders:${meshColliders.length}`;
+    debugOverlay.innerHTML = `w:${keys['w']?1:0} a:${keys['a']?1:0} s:${keys['s']?1:0} d:${keys['d']?1:0}<br>pos:${player.x.toFixed(1)},${player.z.toFixed(1)}<br>cam:${camera.position.x.toFixed(1)},${camera.position.y.toFixed(1)},${camera.position.z.toFixed(1)}<br>colliders:${meshColliders.length}`;
 
     if (document.getElementById("paintWindow")?.style.display === "flex") {
       renderer.render(scene, camera);
