@@ -81,11 +81,19 @@
   let isDown = false;
   let lastX = 0, lastY = 0;
 
-  const player = new THREE.Vector3(0, 1, 10);
+  const player = new THREE.Vector3(0, 1.5, 0);
   const playerBox = new THREE.Box3();
 
-  window.addEventListener("keydown", e => (keys[e.code] = true));
-  window.addEventListener("keyup", e => (keys[e.code] = false));
+  window.addEventListener("keydown", e => {
+    const key = e.key.toLowerCase();
+    keys[key] = true;
+    keys[e.code] = true;
+  });
+  window.addEventListener("keyup", e => {
+    const key = e.key.toLowerCase();
+    keys[key] = false;
+    keys[e.code] = false;
+  });
 
   canvas.addEventListener("click", e => {
     const r = canvas.getBoundingClientRect();
@@ -102,8 +110,8 @@
   });
 
   const clamp = pos => {
-    pos.x = Math.max(-15, Math.min(15, pos.x));
-    pos.z = Math.max(-15, Math.min(15, pos.z));
+    pos.x = Math.max(-25, Math.min(25, pos.x));
+    pos.z = Math.max(-25, Math.min(25, pos.z));
   };
 
   canvas.addEventListener("pointerdown", e => {
@@ -146,8 +154,8 @@
       return;
     }
 
-    const forward = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
-    const strafe = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
+    const forward = (keys['w'] ? 1 : 0) - (keys['s'] ? 1 : 0);
+    const strafe = (keys['d'] ? 1 : 0) - (keys['a'] ? 1 : 0);
 
     // Camera pan with arrow keys
     if (keys.ArrowUp) pitch += 1.8 * dt;
