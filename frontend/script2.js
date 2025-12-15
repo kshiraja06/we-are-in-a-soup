@@ -260,9 +260,9 @@
     const dt = Math.min(0.05, (t - prev) / 1000);
     prev = t;
     
-    // Debug: Check model state on first call
-    if (collisionCount === 0 && t < 1000) {
-      console.log('🟦 INIT CHECK - Model defined:', !!model, 'Collision radius:', modelCollisionRadius, 'Player radius:', playerRadius);
+    // Debug: Log model status every frame (first 5 frames only)
+    if (collisionCount < 5) {
+      console.log(`Frame ${collisionCount}: Model=${!!model}, Radius=${modelCollisionRadius}, Forward/Strafe will be checked`);
     }
 
     if (document.getElementById('paintWindow').style.display === 'flex') {
@@ -281,6 +281,7 @@
     const strafe = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
 
     if (forward || strafe) {
+      console.log(`🔵 MOVEMENT: forward=${forward}, strafe=${strafe}, model=${!!model}`);
       const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
       const vx = (sinY * -forward + cosY * strafe) * speed * dt;
       const vz = (cosY * -forward - sinY * strafe) * speed * dt;
