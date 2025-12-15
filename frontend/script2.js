@@ -259,6 +259,11 @@
   function animate(t) {
     const dt = Math.min(0.05, (t - prev) / 1000);
     prev = t;
+    
+    // Debug: Check model state on first call
+    if (collisionCount === 0 && t < 1000) {
+      console.log('🟦 INIT CHECK - Model defined:', !!model, 'Collision radius:', modelCollisionRadius, 'Player radius:', playerRadius);
+    }
 
     if (document.getElementById('paintWindow').style.display === 'flex') {
         renderer.render(scene, camera);
@@ -285,22 +290,27 @@
       clamp(next);
       
       // Collision detection with model - prevent walking through it
-      const modelPos = model.position.clone();
-      const distToModel = next.distanceTo(modelPos);
-      const collisionThreshold = modelCollisionRadius + playerRadius;
-      
-      if (distToModel > collisionThreshold) {
+      if (!model) {
+        console.warn('⚠️ Model not defined yet, skipping collision');
         player.x = next.x;
         player.z = next.z;
       } else {
-        collisionCount++;
-        const now = performance.now();
-        if (now - lastCollisionTime > 1000) { // Log collision every 1 second max
-          console.log(`🔴 COLLISION #${collisionCount}! Distance: ${distToModel.toFixed(2)} | Threshold: ${collisionThreshold.toFixed(2)} | Player: (${player.x.toFixed(1)}, ${player.z.toFixed(1)}) | Model: (${modelPos.x.toFixed(1)}, ${modelPos.z.toFixed(1)}) | Trying to move to: (${next.x.toFixed(1)}, ${next.z.toFixed(1)})`);
-          lastCollisionTime = now;
+        const modelPos = model.position.clone();
+        const distToModel = next.distanceTo(modelPos);
+        const collisionThreshold = modelCollisionRadius + playerRadius;
+        
+        if (distToModel > collisionThreshold) {
+          player.x = next.x;
+          player.z = next.z;
+        } else {
+          collisionCount++;
+          const now = performance.now();
+          if (now - lastCollisionTime > 1000) { // Log collision every 1 second max
+            console.log(`🔴 COLLISION #${collisionCount}! Distance: ${distToModel.toFixed(2)} | Threshold: ${collisionThreshold.toFixed(2)} | Player: (${player.x.toFixed(1)}, ${player.z.toFixed(1)}) | Model: (${modelPos.x.toFixed(1)}, ${modelPos.z.toFixed(1)}) | Trying to move to: (${next.x.toFixed(1)}, ${next.z.toFixed(1)})`);
+            lastCollisionTime = now;
+          }
         }
       }
-    }
 
     player.y = eyeHeight;
 
