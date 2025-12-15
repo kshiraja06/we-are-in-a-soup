@@ -55,6 +55,8 @@
       )
     );
     model = gltf.scene;
+    // Make the entire classroom environment 2x larger
+    model.scale.setScalar(2);
     
     model.traverse(m => {
       if (m.isMesh) {
@@ -121,7 +123,8 @@
   } catch (err) {
     console.error('Failed to load classroom.glb, using fallback box');
     model = new THREE.Mesh(
-      new THREE.BoxGeometry(20, 6, 20),
+      // 2x larger fallback room
+      new THREE.BoxGeometry(40, 12, 40),
       new THREE.MeshStandardMaterial({ color: 0x8b8b8b })
     );
     model.position.set(0, 3, 0);
@@ -143,7 +146,8 @@
     );
     claytable = claytableGltf.scene;
     claytable.position.set(6, -0.5, -11);
-    claytable.scale.setScalar(0.22);
+    // 2x larger than previous table scale
+    claytable.scale.setScalar(0.44);
     claytable.traverse(m => {
       if (m.isMesh) {
         m.castShadow = true;
@@ -162,7 +166,8 @@
       new THREE.MeshStandardMaterial({ color: 0x8b4513 })
     );
     claytable.position.set(0, 0.1, 0);
-    claytable.scale.setScalar(0.12);
+    // 2x larger fallback table
+    claytable.scale.setScalar(0.24);
     scene.add(claytable);
   }
 
