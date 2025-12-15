@@ -71,6 +71,7 @@
 
 
   let model;
+  let modelCollisionRadius = 1.5; // Default fallback radius
   try {
     // Try to get GLTFLoader - it might be exposed different ways
     let GLTFLoaderClass = window.THREE?.GLTFLoader || window.GLTFLoader;
@@ -100,6 +101,12 @@
     });
     scene.add(model);
     console.log('Model added to scene');
+    
+    // Compute bounding box for collision detection
+    const box = new THREE.Box3().setFromObject(model);
+    const modelSize = box.getSize(new THREE.Vector3());
+    modelCollisionRadius = Math.max(modelSize.x, modelSize.z) / 2;
+    console.log('Model collision radius:', modelCollisionRadius);
   } catch (error) {
     console.error('Failed to load GLB model:', error);
     console.error('Error details:', error.message, error.stack);
@@ -276,15 +283,15 @@
       clamp(next);
       
       // Collision detection with model - prevent walking through it
-      const modelPos = new THREE.Vector3(0, 0, 0);
+      const modelPos = model.position.clone();
       const distToModel = next.distanceTo(modelPos);
-      const collisionRadius = 2.5; // Larger radius to prevent walking through
+      const collisionThreshold = modelCollisionRadius + playerRadius;
       
-      if (distToModel > collisionRadius) {
+      if (distToModel > collisionThreshold) {
         player.x = next.x;
         player.z = next.z;
       } else {
-        console.log('Collision detected! Distance:', distToModel);
+        console.log('Collision detected! Distance:', distToModel, 'Threshold:', collisionThreshold);
       }
     }
 
