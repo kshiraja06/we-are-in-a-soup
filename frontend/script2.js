@@ -296,7 +296,8 @@
         player.z = next.z;
       } else {
         const modelPos = model.position.clone();
-        const distToModel = next.distanceTo(modelPos);
+        // Only check horizontal distance (X and Z), ignore height (Y)
+        const distToModel = Math.sqrt((next.x - modelPos.x) ** 2 + (next.z - modelPos.z) ** 2);
         const collisionThreshold = modelCollisionRadius + playerRadius;
         
         if (distToModel > collisionThreshold) {
