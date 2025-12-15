@@ -42,6 +42,7 @@
   let model;
   let meshColliders = [];
   let claytable;
+  let roomCenter = new THREE.Vector3(0, 0, 0);
 
   try {
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
@@ -70,13 +71,70 @@
     });
     scene.add(model);
 
-    // Find room center from collision boxes
-    let roomCenter = new THREE.Vector3();
+    // Find room center and dimensions from collision boxes
+    let roomBounds = new THREE.Box3();
     if (meshColliders.length > 0) {
-      const bounds = new THREE.Box3();
-      meshColliders.forEach(box => bounds.union(box));
-      bounds.getCenter(roomCenter);
-      console.log('Room center found at:', roomCenter.x.toFixed(1), roomCenter.y.toFixed(1), roomCenter.z.toFixed(1));
+      meshColliders.forEach(box => roomBounds.union(box));
+      roomBounds.getCenter(roomCenter);
+      console.log('Room center:', roomCenter.x.toFixed(1), roomCenter.y.toFixed(1), roomCenter.z.toFixed(1));
+      console.log('Room bounds min:', roomBounds.min);
+      console.log('Room bounds max:', roomBounds.max);
+      
+      // Clear bad collision boxes and create clean wall/floor boxes
+      meshColliders = [];
+      const minX = roomBounds.min.x;
+      const maxX = roomBounds.max.x;
+      const minY = roomBounds.min.y;
+      const maxY = roomBounds.max.y;
+      const minZ = roomBounds.min.z;
+      const maxZ = roomBounds.max.z;
+      const thickness = 0.5;
+      
+      // Floor
+      let floor = new THREE.Box3(
+        new THREE.Vector3(minX, minY - thickness, minZ),
+        new THREE.Vector3(maxX, minY + thickness, maxZ)
+      );
+      meshColliders.push(floor);
+      console.log('Floor collision box created');
+      
+      // Ceiling
+      let ceiling = new THREE.Box3(
+        new THREE.Vector3(minX, maxY - thickness, minZ),
+        new THREE.Vector3(maxX, maxY + thickness, maxZ)
+      );
+      meshColliders.push(ceiling);
+      
+      // Four walls
+      // Front wall (minZ)
+      let frontWall = new THREE.Box3(
+        new THREE.Vector3(minX, minY, minZ - thickness),
+        new THREE.Vector3(maxX, maxY, minZ + thickness)
+      );
+      meshColliders.push(frontWall);
+      
+      // Back wall (maxZ)
+      let backWall = new THREE.Box3(
+        new THREE.Vector3(minX, minY, maxZ - thickness),
+        new THREE.Vector3(maxX, maxY, maxZ + thickness)
+      );
+      meshColliders.push(backWall);
+      
+      // Left wall (minX)
+      let leftWall = new THREE.Box3(
+        new THREE.Vector3(minX - thickness, minY, minZ),
+        new THREE.Vector3(minX + thickness, maxY, maxZ)
+      );
+      meshColliders.push(leftWall);
+      
+      // Right wall (maxX)
+      let rightWall = new THREE.Box3(
+        new THREE.Vector3(maxX - thickness, minY, minZ),
+        new THREE.Vector3(maxX + thickness, maxY, maxZ)
+      );
+      meshColliders.push(rightWall);
+      
+      console.log('Created 6 collision boxes (floor, ceiling, 4 walls)');
     }
   } catch (err) {
     console.error('Failed to load classroom.glb, using fallback box');
@@ -133,7 +191,7 @@
   let isDown = false;
   let lastX = 0, lastY = 0;
 
-  const player = new THREE.Vector3(-8, 1.5, -8);
+  const player = new THREE.Vector3(roomCenter.x, ROOM.EYE_HEIGHT, roomCenter.z);
   const playerBox = new THREE.Box3();
 
   document.addEventListener("keydown", e => {
@@ -233,21 +291,19 @@
       const next = player.clone();
       next.x += dx;
       next.z += dz;
-      clamp(next);
 
+      // Check collision
       playerBox.setFromCenterAndSize(new THREE.Vector3(next.x, 0.9, next.z), new THREE.Vector3(1.0, 1.7, 1.0));
-
-      // Check collision against all mesh colliders
       let colliding = false;
       for (let i = 0; i < meshColliders.length; i++) {
         if (playerBox.intersectsBox(meshColliders[i])) {
           colliding = true;
-          console.log('Collision with mesh', i, 'at player pos', next.x.toFixed(1), next.z.toFixed(1));
           break;
         }
       }
-
+      
       if (!colliding) {
+        clamp(next);
         player.copy(next);
       }
     }
