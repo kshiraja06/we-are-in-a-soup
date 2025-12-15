@@ -64,97 +64,60 @@
           m.material.roughness = 0.5;
           m.material.metalness = 0.1;
         }
-        // Create individual bounding box for each mesh
-        const box = new THREE.Box3().setFromObject(m);
-        meshColliders.push(box);
+        // Check if this is a collision mesh (name contains "coll_")
+        if (m.name.toLowerCase().includes('coll_')) {
+          const box = new THREE.Box3().setFromObject(m);
+          meshColliders.push(box);
+          console.log('Found collision mesh:', m.name, 'bounds:', box.min, 'to', box.max);
+        }
       }
     });
     scene.add(model);
 
-    // Find room bounds - use hardcoded reasonable defaults if mesh bounds are crazy
-    let roomBounds = new THREE.Box3();
-    if (meshColliders.length > 0) {
-      meshColliders.forEach(box => roomBounds.union(box));
-      console.log('Raw room bounds min:', roomBounds.min);
-      console.log('Raw room bounds max:', roomBounds.max);
+    // If no collision meshes found, create default room boundaries
+    if (meshColliders.length === 0) {
+      console.log('No collision meshes found, creating default room boundaries');
+      roomCenter = new THREE.Vector3(0, 3, 0);
+      const minX = -10, maxX = 10, minY = 0, maxY = 6, minZ = -10, maxZ = 10;
+      const thickness = 0.3;
       
-      // If bounds are unreasonable (too large), use default room size
-      const size = roomBounds.getSize(new THREE.Vector3());
-      if (size.x > 100 || size.y > 100 || size.z > 100) {
-        console.log('Room bounds too large, using defaults');
-        roomBounds = new THREE.Box3(
-          new THREE.Vector3(-10, 0, -10),
-          new THREE.Vector3(10, 6, 10)
-        );
-      }
+      // Floor
+      meshColliders.push(new THREE.Box3(
+        new THREE.Vector3(minX, minY - thickness, minZ),
+        new THREE.Vector3(maxX, minY + thickness, maxZ)
+      ));
+      
+      // Ceiling
+      meshColliders.push(new THREE.Box3(
+        new THREE.Vector3(minX, maxY - thickness, minZ),
+        new THREE.Vector3(maxX, maxY + thickness, maxZ)
+      ));
+      
+      // Four walls
+      meshColliders.push(new THREE.Box3(
+        new THREE.Vector3(minX, minY, minZ - thickness),
+        new THREE.Vector3(maxX, maxY, minZ + thickness)
+      ));
+      
+      meshColliders.push(new THREE.Box3(
+        new THREE.Vector3(minX, minY, maxZ - thickness),
+        new THREE.Vector3(maxX, maxY, maxZ + thickness)
+      ));
+      
+      meshColliders.push(new THREE.Box3(
+        new THREE.Vector3(minX - thickness, minY, minZ),
+        new THREE.Vector3(minX + thickness, maxY, maxZ)
+      ));
+      
+      meshColliders.push(new THREE.Box3(
+        new THREE.Vector3(maxX - thickness, minY, minZ),
+        new THREE.Vector3(maxX + thickness, maxY, maxZ)
+      ));
+      
+      console.log('Created 6 default collision boxes');
     } else {
-      // Fallback to default room
-      roomBounds = new THREE.Box3(
-        new THREE.Vector3(-10, 0, -10),
-        new THREE.Vector3(10, 6, 10)
-      );
+      console.log('Using', meshColliders.length, 'collision meshes from Blender');
     }
-    
-    roomBounds.getCenter(roomCenter);
-    console.log('Room center:', roomCenter.x.toFixed(1), roomCenter.y.toFixed(1), roomCenter.z.toFixed(1));
-    console.log('Final room bounds min:', roomBounds.min);
-    console.log('Final room bounds max:', roomBounds.max);
-      
-    // Clear bad collision boxes and create clean wall/floor boxes
-    meshColliders = [];
-    const minX = roomBounds.min.x;
-    const maxX = roomBounds.max.x;
-    const minY = roomBounds.min.y;
-    const maxY = roomBounds.max.y;
-    const minZ = roomBounds.min.z;
-    const maxZ = roomBounds.max.z;
-    const thickness = 0.3;
-    
-    // Floor
-    let floor = new THREE.Box3(
-      new THREE.Vector3(minX, minY - thickness, minZ),
-      new THREE.Vector3(maxX, minY + thickness, maxZ)
-    );
-    meshColliders.push(floor);
-    console.log('Floor collision box:', floor.min, 'to', floor.max);
-    
-    // Ceiling
-    let ceiling = new THREE.Box3(
-      new THREE.Vector3(minX, maxY - thickness, minZ),
-      new THREE.Vector3(maxX, maxY + thickness, maxZ)
-    );
-    meshColliders.push(ceiling);
-    
-    // Four walls
-    // Front wall (minZ)
-    let frontWall = new THREE.Box3(
-      new THREE.Vector3(minX, minY, minZ - thickness),
-      new THREE.Vector3(maxX, maxY, minZ + thickness)
-    );
-    meshColliders.push(frontWall);
-    
-    // Back wall (maxZ)
-    let backWall = new THREE.Box3(
-      new THREE.Vector3(minX, minY, maxZ - thickness),
-      new THREE.Vector3(maxX, maxY, maxZ + thickness)
-    );
-    meshColliders.push(backWall);
-    
-    // Left wall (minX)
-    let leftWall = new THREE.Box3(
-      new THREE.Vector3(minX - thickness, minY, minZ),
-      new THREE.Vector3(minX + thickness, maxY, maxZ)
-    );
-    meshColliders.push(leftWall);
-    
-    // Right wall (maxX)
-    let rightWall = new THREE.Box3(
-      new THREE.Vector3(maxX - thickness, minY, minZ),
-      new THREE.Vector3(maxX + thickness, maxY, maxZ)
-    );
-    meshColliders.push(rightWall);
-    
-    console.log('Created 6 collision boxes, player will spawn at:', roomCenter.x.toFixed(1), roomCenter.z.toFixed(1));
   } catch (err) {
     console.error('Failed to load classroom.glb, using fallback box');
     model = new THREE.Mesh(
@@ -310,21 +273,10 @@
       const next = player.clone();
       next.x += dx;
       next.z += dz;
-
-      // Check collision
-      playerBox.setFromCenterAndSize(new THREE.Vector3(next.x, 0.9, next.z), new THREE.Vector3(1.0, 1.7, 1.0));
-      let colliding = false;
-      for (let i = 0; i < meshColliders.length; i++) {
-        if (playerBox.intersectsBox(meshColliders[i])) {
-          colliding = true;
-          break;
-        }
-      }
+      clamp(next);
       
-      if (!colliding) {
-        clamp(next);
-        player.copy(next);
-      }
+      // TODO: Add collision check once coll_* objects are in Blender
+      player.copy(next);
     }
 
     camera.position.set(player.x, ROOM.EYE_HEIGHT, player.z);
