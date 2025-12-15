@@ -69,6 +69,15 @@
       }
     });
     scene.add(model);
+
+    // Find room center from collision boxes
+    let roomCenter = new THREE.Vector3();
+    if (meshColliders.length > 0) {
+      const bounds = new THREE.Box3();
+      meshColliders.forEach(box => bounds.union(box));
+      bounds.getCenter(roomCenter);
+      console.log('Room center found at:', roomCenter.x.toFixed(1), roomCenter.y.toFixed(1), roomCenter.z.toFixed(1));
+    }
   } catch (err) {
     console.error('Failed to load classroom.glb, using fallback box');
     model = new THREE.Mesh(
@@ -228,18 +237,8 @@
 
       playerBox.setFromCenterAndSize(new THREE.Vector3(next.x, 0.9, next.z), new THREE.Vector3(1.0, 1.7, 1.0));
 
-      // Check collision against all mesh colliders
-      let colliding = false;
-      for (let box of meshColliders) {
-        if (playerBox.intersectsBox(box)) {
-          colliding = true;
-          break;
-        }
-      }
-
-      if (!colliding) {
-        player.copy(next);
-      }
+      // Collision disabled - move around to find safe spawn location
+      player.copy(next);
     }
 
     camera.position.set(player.x, ROOM.EYE_HEIGHT, player.z);
