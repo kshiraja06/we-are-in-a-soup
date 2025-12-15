@@ -41,6 +41,7 @@
 
   let model;
   let meshColliders = [];
+  let claytable;
 
   try {
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
@@ -80,6 +81,41 @@
     meshColliders.push(box);
   }
 
+  // Load claytable
+  try {
+    const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
+    const claytableGltf = await new Promise((res, rej) =>
+      new GLTFLoader().load(
+        "./assets/claytable.glb",
+        (data) => { res(data); },
+        undefined,
+        (err) => { rej(err); }
+      )
+    );
+    claytable = claytableGltf.scene;
+    claytable.position.set(8, 0, -5);
+    claytable.scale.setScalar(0.8);
+    claytable.traverse(m => {
+      if (m.isMesh) {
+        m.castShadow = true;
+        m.receiveShadow = true;
+        if (m.material) {
+          m.material.roughness = 0.6;
+          m.material.metalness = 0.1;
+        }
+      }
+    });
+    scene.add(claytable);
+  } catch (err) {
+    console.error('Failed to load claytable.glb');
+    claytable = new THREE.Mesh(
+      new THREE.BoxGeometry(2.5, 1, 1.5),
+      new THREE.MeshStandardMaterial({ color: 0x8b4513 })
+    );
+    claytable.position.set(8, 0.5, -5);
+    scene.add(claytable);
+  }
+
   // Input
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
@@ -104,7 +140,9 @@
     pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
     pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1;
     raycaster.setFromCamera(pointer, camera);
-    if (raycaster.intersectObject(model, true).length) {
+    
+    // Check if clicking on claytable
+    if (claytable && raycaster.intersectObject(claytable, true).length) {
       const w = document.getElementById("paintWindow");
       if (w) {
         w.style.display = "flex";
