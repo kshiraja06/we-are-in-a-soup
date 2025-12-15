@@ -237,8 +237,19 @@
 
       playerBox.setFromCenterAndSize(new THREE.Vector3(next.x, 0.9, next.z), new THREE.Vector3(1.0, 1.7, 1.0));
 
-      // Collision disabled - move around to find safe spawn location
-      player.copy(next);
+      // Check collision against all mesh colliders
+      let colliding = false;
+      for (let i = 0; i < meshColliders.length; i++) {
+        if (playerBox.intersectsBox(meshColliders[i])) {
+          colliding = true;
+          console.log('Collision with mesh', i, 'at player pos', next.x.toFixed(1), next.z.toFixed(1));
+          break;
+        }
+      }
+
+      if (!colliding) {
+        player.copy(next);
+      }
     }
 
     camera.position.set(player.x, ROOM.EYE_HEIGHT, player.z);
