@@ -143,7 +143,7 @@
     );
     claytable = claytableGltf.scene;
     claytable.position.set(6, -0.5, -11);
-    claytable.scale.setScalar(0.18);
+    claytable.scale.setScalar(0.23);
     claytable.traverse(m => {
       if (m.isMesh) {
         m.castShadow = true;
