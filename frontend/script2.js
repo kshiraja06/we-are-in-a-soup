@@ -124,7 +124,7 @@
   let isDown = false;
   let lastX = 0, lastY = 0;
 
-  const player = new THREE.Vector3(5, 1.5, 5);
+  const player = new THREE.Vector3(-8, 1.5, -8);
   const playerBox = new THREE.Box3();
 
   document.addEventListener("keydown", e => {
@@ -228,18 +228,8 @@
 
       playerBox.setFromCenterAndSize(new THREE.Vector3(next.x, 0.9, next.z), new THREE.Vector3(0.5, 1.7, 0.5));
 
-      // Check collision against all mesh colliders
-      let colliding = false;
-      for (let box of meshColliders) {
-        if (playerBox.intersectsBox(box)) {
-          colliding = true;
-          break;
-        }
-      }
-
-      if (!colliding) {
-        player.copy(next);
-      }
+      // Collision disabled for now - allow free movement
+      player.copy(next);
     }
 
     camera.position.set(player.x, ROOM.EYE_HEIGHT, player.z);
