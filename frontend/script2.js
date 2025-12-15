@@ -16,18 +16,21 @@
   // Scene & Camera
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x2b2f33);
-  const camera = new THREE.PerspectiveCamera(50, 2, 0.1, 100);
+  const camera = new THREE.PerspectiveCamera(50, 2, 0.1, 500);
   scene.add(camera);
 
   // Camera controls
   let yaw = 0, pitch = 0;
 
   // Lighting
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.8));
-  const dir = new THREE.DirectionalLight(0xffffff, 0.9);
-  dir.position.set(10, 15, 10);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.5));
+  const dir = new THREE.DirectionalLight(0xffffff, 1.5);
+  dir.position.set(20, 30, 20);
   dir.castShadow = true;
+  dir.shadow.mapSize.width = 2048;
+  dir.shadow.mapSize.height = 2048;
   scene.add(dir);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
   let model;
   let meshColliders = [];
@@ -70,7 +73,7 @@
   let isDown = false;
   let lastX = 0, lastY = 0;
 
-  const player = new THREE.Vector3(0, ROOM.EYE_HEIGHT, 5);
+  const player = new THREE.Vector3(0, 1, 10);
   const playerBox = new THREE.Box3();
 
   window.addEventListener("keydown", e => (keys[e.code] = true));
