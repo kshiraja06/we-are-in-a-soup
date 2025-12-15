@@ -187,8 +187,18 @@
     ArrowRight: 'panRight'
   };
 
-  window.addEventListener('keydown', e => { if (keyMap[e.code]) keys[keyMap[e.code]] = true; });
-  window.addEventListener('keyup', e => { if (keyMap[e.code]) keys[keyMap[e.code]] = false; });
+  window.addEventListener('keydown', e => { 
+    if (keyMap[e.code]) {
+      keys[keyMap[e.code]] = true;
+      console.log(`⌨️ KEY DOWN: ${e.code} -> ${keyMap[e.code]}`);
+    }
+  });
+  window.addEventListener('keyup', e => { 
+    if (keyMap[e.code]) {
+      keys[keyMap[e.code]] = false;
+      console.log(`⌨️ KEY UP: ${e.code}`);
+    }
+  });
 
   function onResize() {
     const w = canvas.clientWidth || window.innerWidth;
