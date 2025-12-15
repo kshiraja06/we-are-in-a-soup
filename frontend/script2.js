@@ -253,6 +253,8 @@
 
 
   let prev = performance.now();
+  let lastCollisionTime = 0;
+  let collisionCount = 0;
 
   function animate(t) {
     const dt = Math.min(0.05, (t - prev) / 1000);
@@ -291,7 +293,12 @@
         player.x = next.x;
         player.z = next.z;
       } else {
-        console.log('Collision detected! Distance:', distToModel, 'Threshold:', collisionThreshold);
+        collisionCount++;
+        const now = performance.now();
+        if (now - lastCollisionTime > 1000) { // Log collision every 1 second max
+          console.log(`🔴 COLLISION #${collisionCount}! Distance: ${distToModel.toFixed(2)} | Threshold: ${collisionThreshold.toFixed(2)} | Player: (${player.x.toFixed(1)}, ${player.z.toFixed(1)}) | Model: (${modelPos.x.toFixed(1)}, ${modelPos.z.toFixed(1)}) | Trying to move to: (${next.x.toFixed(1)}, ${next.z.toFixed(1)})`);
+          lastCollisionTime = now;
+        }
       }
     }
 
