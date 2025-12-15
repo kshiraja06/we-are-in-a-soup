@@ -72,61 +72,23 @@
 
   let model;
   let modelCollisionRadius = 1.5; // Default fallback radius
+  
+  // SKIP GLTF LOADING FOR NOW - TEST COLLISION WITH BOX
   try {
-    // Try to get GLTFLoader - it might be exposed different ways
-    let GLTFLoaderClass = window.THREE?.GLTFLoader || window.GLTFLoader;
-    
-    if (!GLTFLoaderClass) {
-      throw new Error('GLTFLoader not available');
-    }
-    
-    const loader = new GLTFLoaderClass();
-    const assetPath = './assets/claytable.glb';
-    console.log('Attempting to load GLB from:', assetPath);
-    const gltf = await new Promise((resolve, reject) => {
-      loader.load(assetPath, resolve, undefined, reject);
-    });
-    model = gltf.scene;
-    console.log('Model loaded successfully:', model);
-    model.position.set(10, -1.3, -5);
-    model.scale.set(0.4, 0.4, 0.4);
-    model.name = 'SoupBowl';
-    model.traverse(child => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-        child.material.roughness = 0.6;
-        child.material.metalness = 0.1;
-      }
-    });
-    scene.add(model);
-    console.log('Model added to scene');
-    
-    // Compute bounding box for collision detection
-    const box = new THREE.Box3().setFromObject(model);
-    const modelSize = box.getSize(new THREE.Vector3());
-    modelCollisionRadius = Math.max(modelSize.x, modelSize.z) / 2;
-    console.log('Model collision radius:', modelCollisionRadius);
+    throw new Error('Skipping GLTF for collision testing');
   } catch (error) {
-    console.error('Failed to load GLB model:', error);
-    console.error('Error details:', error.message, error.stack);
+    console.log('Using box for collision testing');
     const deskGeometry = new THREE.BoxGeometry(2.5, 1, 1.5);
     const deskMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
     const desk = new THREE.Mesh(deskGeometry, deskMaterial);
     desk.position.set(0, 0.5, 0);
     desk.castShadow = true;
     scene.add(desk);
-
-    const bowlRadius = 0.4;
-    const bowlGeometry = new THREE.SphereGeometry(bowlRadius, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2);
-    const bowlMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc, side: THREE.DoubleSide });
-    model = new THREE.Mesh(bowlGeometry, bowlMaterial);
-    model.position.set(0, 1, 0);
-    model.rotation.x = -Math.PI;
-    model.name = 'SoupBowl';
-    model.castShadow = true;
-    scene.add(model);
-    console.log('Using fallback procedural bowl');
+    
+    model = desk;
+    // Set collision radius based on box size
+    modelCollisionRadius = Math.max(2.5, 1.5) / 2 + 0.5; // Add buffer
+    console.log('Box created with collision radius:', modelCollisionRadius);
   }
 
   const raycaster = new THREE.Raycaster();
