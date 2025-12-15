@@ -226,7 +226,7 @@
       next.z += dz;
       clamp(next);
 
-      playerBox.setFromCenterAndSize(new THREE.Vector3(next.x, 0.9, next.z), new THREE.Vector3(0.5, 1.7, 0.5));
+      playerBox.setFromCenterAndSize(new THREE.Vector3(next.x, 0.9, next.z), new THREE.Vector3(1.0, 1.7, 1.0));
 
       // Check collision against all mesh colliders
       let colliding = false;
