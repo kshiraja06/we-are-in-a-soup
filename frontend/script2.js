@@ -183,8 +183,19 @@
 
       playerBox.setFromCenterAndSize(new THREE.Vector3(next.x, 0.9, next.z), new THREE.Vector3(0.4, 1.7, 0.4));
 
-      // Collision disabled - allow free movement
-      player.copy(next);
+      // Check collision against all mesh colliders
+      let colliding = false;
+      for (let box of meshColliders) {
+        if (playerBox.intersectsBox(box)) {
+          colliding = true;
+          break;
+        }
+      }
+
+      // Only allow movement if not colliding
+      if (!colliding) {
+        player.copy(next);
+      }
     }
 
     camera.position.set(player.x, ROOM.EYE_HEIGHT, player.z);
