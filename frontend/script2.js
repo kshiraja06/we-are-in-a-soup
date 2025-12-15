@@ -93,8 +93,8 @@
       )
     );
     claytable = claytableGltf.scene;
-    claytable.position.set(8, -0.8, -5);
-    claytable.scale.setScalar(0.3);
+    claytable.position.set(0, -0.85, 0);
+    claytable.scale.setScalar(0.15);
     claytable.traverse(m => {
       if (m.isMesh) {
         m.castShadow = true;
@@ -112,8 +112,8 @@
       new THREE.BoxGeometry(2.5, 1, 1.5),
       new THREE.MeshStandardMaterial({ color: 0x8b4513 })
     );
-    claytable.position.set(8, 0.2, -5);
-    claytable.scale.setScalar(0.2);
+    claytable.position.set(0, 0.1, 0);
+    claytable.scale.setScalar(0.1);
     scene.add(claytable);
   }
 
@@ -143,11 +143,17 @@
     raycaster.setFromCamera(pointer, camera);
     
     // Check if clicking on claytable
-    if (claytable && raycaster.intersectObject(claytable, true).length) {
-      const w = document.getElementById("paintWindow");
-      if (w) {
-        w.style.display = "flex";
-        setTimeout(() => window.initializeCanvas?.(), 10);
+    if (claytable) {
+      const intersects = raycaster.intersectObject(claytable, true);
+      console.log('Claytable click test:', intersects.length > 0);
+      if (intersects.length) {
+        const w = document.getElementById("paintWindow");
+        console.log('Paint window element:', w);
+        if (w) {
+          w.style.display = "flex";
+          w.classList.remove("hidden-init");
+          setTimeout(() => window.initializeCanvas?.(), 10);
+        }
       }
     }
   });
