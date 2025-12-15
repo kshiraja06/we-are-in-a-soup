@@ -23,14 +23,14 @@
   let yaw = 0, pitch = 0;
 
   // Lighting
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.5));
-  const dir = new THREE.DirectionalLight(0xffffff, 1.5);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.6);
   dir.position.set(20, 30, 20);
   dir.castShadow = true;
   dir.shadow.mapSize.width = 2048;
   dir.shadow.mapSize.height = 2048;
   scene.add(dir);
-  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
   let model;
   let meshColliders = [];
@@ -179,9 +179,8 @@
       next.z += dz;
       clamp(next);
 
+      // Try full movement first
       playerBox.setFromCenterAndSize(new THREE.Vector3(next.x, 0.9, next.z), PLAYER.SIZE);
-
-      // Check collision against all mesh colliders
       let colliding = false;
       for (let box of meshColliders) {
         if (playerBox.intersectsBox(box)) {
@@ -192,6 +191,34 @@
 
       if (!colliding) {
         player.copy(next);
+      } else {
+        // Try sliding along X axis
+        const nextX = player.clone();
+        nextX.x += dx;
+        clamp(nextX);
+        playerBox.setFromCenterAndSize(new THREE.Vector3(nextX.x, 0.9, nextX.z), PLAYER.SIZE);
+        let collidingX = false;
+        for (let box of meshColliders) {
+          if (playerBox.intersectsBox(box)) {
+            collidingX = true;
+            break;
+          }
+        }
+        if (!collidingX) player.x = nextX.x;
+        
+        // Try sliding along Z axis
+        const nextZ = player.clone();
+        nextZ.z += dz;
+        clamp(nextZ);
+        playerBox.setFromCenterAndSize(new THREE.Vector3(nextZ.x, 0.9, nextZ.z), PLAYER.SIZE);
+        let collidingZ = false;
+        for (let box of meshColliders) {
+          if (playerBox.intersectsBox(box)) {
+            collidingZ = true;
+            break;
+          }
+        }
+        if (!collidingZ) player.z = nextZ.z;
       }
     }
 
