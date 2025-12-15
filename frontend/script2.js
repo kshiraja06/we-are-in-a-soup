@@ -30,14 +30,14 @@
   let yaw = 0, pitch = 0;
 
   // Lighting
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.4));
-  const dir = new THREE.DirectionalLight(0xffffff, 0.4);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.3));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.3);
   dir.position.set(20, 30, 20);
   dir.castShadow = true;
   dir.shadow.mapSize.width = 2048;
   dir.shadow.mapSize.height = 2048;
   scene.add(dir);
-  scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 
   let model;
   let meshColliders = [];
@@ -153,7 +153,7 @@
     prev = t;
 
     // Update debug overlay
-    debugOverlay.innerHTML = `w:${keys['w']?1:0} a:${keys['a']?1:0} s:${keys['s']?1:0} d:${keys['d']?1:0}<br>pos:${player.x.toFixed(1)},${player.z.toFixed(1)}<br>colliders:${meshColliders.length}<br>DISABLED collisions for testing`;
+    debugOverlay.innerHTML = `w:${keys['w']?1:0} a:${keys['a']?1:0} s:${keys['s']?1:0} d:${keys['d']?1:0}<br>pos:${player.x.toFixed(1)},${player.z.toFixed(1)}<br>colliders:${meshColliders.length}`;
 
     if (document.getElementById("paintWindow")?.style.display === "flex") {
       renderer.render(scene, camera);
@@ -181,10 +181,20 @@
       next.z += dz;
       clamp(next);
 
-      playerBox.setFromCenterAndSize(new THREE.Vector3(next.x, 0.9, next.z), PLAYER.SIZE);
+      playerBox.setFromCenterAndSize(new THREE.Vector3(next.x, 0.9, next.z), new THREE.Vector3(0.4, 1.7, 0.4));
 
-      // Temporarily disable collision checking to test movement
-      player.copy(next);
+      // Check collision against all mesh colliders with margin
+      let colliding = false;
+      for (let box of meshColliders) {
+        if (playerBox.intersectsBox(box)) {
+          colliding = true;
+          break;
+        }
+      }
+
+      if (!colliding) {
+        player.copy(next);
+      }
     }
 
     camera.position.set(player.x, ROOM.EYE_HEIGHT, player.z);
