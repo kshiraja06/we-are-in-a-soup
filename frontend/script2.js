@@ -93,8 +93,8 @@
       )
     );
     claytable = claytableGltf.scene;
-    claytable.position.set(8, 0, -5);
-    claytable.scale.setScalar(0.8);
+    claytable.position.set(8, -0.8, -5);
+    claytable.scale.setScalar(0.3);
     claytable.traverse(m => {
       if (m.isMesh) {
         m.castShadow = true;
@@ -112,7 +112,8 @@
       new THREE.BoxGeometry(2.5, 1, 1.5),
       new THREE.MeshStandardMaterial({ color: 0x8b4513 })
     );
-    claytable.position.set(8, 0.5, -5);
+    claytable.position.set(8, 0.2, -5);
+    claytable.scale.setScalar(0.2);
     scene.add(claytable);
   }
 
