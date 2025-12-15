@@ -20,7 +20,7 @@
   const halfW = ROOM_W / 2;
   const halfD = ROOM_D / 2;
 
-  const eyeHeight = 0;
+  const eyeHeight = 0.9;
   const speed = 3;
 
   let yaw = 0;
