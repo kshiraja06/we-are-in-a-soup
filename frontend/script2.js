@@ -10,7 +10,8 @@
   document.body.appendChild(debugOverlay);
 
   // Constants
-  const ROOM = { W: 20, H: 6, D: 20, EYE_HEIGHT: 1.0, SPEED: 3 };
+  // Increase SPEED to compensate for the larger environment so movement doesn't feel slow
+  const ROOM = { W: 20, H: 6, D: 20, EYE_HEIGHT: 1.0, SPEED: 9 };
   const PLAYER = { SIZE: new THREE.Vector3(0.6, 1.7, 0.6), RADIUS: 0.3 };
   const SENSITIVITY = 0.002;
 
@@ -145,7 +146,8 @@
       )
     );
     claytable = claytableGltf.scene;
-    claytable.position.set(6, -0.5, -11);
+    // Reposition table so it sits clearly inside the enlarged room, in front of the player
+    claytable.position.set(0, -0.5, -5);
     // Even larger table scale
     claytable.scale.setScalar(0.6);
     claytable.traverse(m => {
