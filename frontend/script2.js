@@ -153,7 +153,7 @@
     prev = t;
 
     // Update debug overlay
-    debugOverlay.innerHTML = `w:${keys['w']?1:0} a:${keys['a']?1:0} s:${keys['s']?1:0} d:${keys['d']?1:0}<br>pos:${player.x.toFixed(1)},${player.z.toFixed(1)}<br>colliders:${meshColliders.length}`;
+    debugOverlay.innerHTML = `w:${keys['w']?1:0} a:${keys['a']?1:0} s:${keys['s']?1:0} d:${keys['d']?1:0}<br>pos:${player.x.toFixed(1)},${player.z.toFixed(1)}<br>colliders:${meshColliders.length}<br>DISABLED collisions for testing`;
 
     if (document.getElementById("paintWindow")?.style.display === "flex") {
       renderer.render(scene, camera);
@@ -183,18 +183,8 @@
 
       playerBox.setFromCenterAndSize(new THREE.Vector3(next.x, 0.9, next.z), PLAYER.SIZE);
 
-      // Check collision against all mesh colliders
-      let colliding = false;
-      for (let box of meshColliders) {
-        if (playerBox.intersectsBox(box)) {
-          colliding = true;
-          break;
-        }
-      }
-
-      if (!colliding) {
-        player.copy(next);
-      }
+      // Temporarily disable collision checking to test movement
+      player.copy(next);
     }
 
     camera.position.set(player.x, ROOM.EYE_HEIGHT, player.z);
