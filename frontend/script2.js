@@ -93,7 +93,7 @@
       )
     );
     claytable = claytableGltf.scene;
-    claytable.position.set(3,1.5,-5);
+    claytable.position.set(4.3,2-6.9);
     claytable.scale.setScalar(0.15)
     claytable.traverse(m => {
       if (m.isMesh) {
@@ -124,7 +124,7 @@
   let isDown = false;
   let lastX = 0, lastY = 0;
 
-  const player = new THREE.Vector3(0, 1.5, 0);
+  const player = new THREE.Vector3(5, 1.5, 5);
   const playerBox = new THREE.Box3();
 
   document.addEventListener("keydown", e => {
@@ -226,10 +226,20 @@
       next.z += dz;
       clamp(next);
 
-      playerBox.setFromCenterAndSize(new THREE.Vector3(next.x, 0.9, next.z), new THREE.Vector3(0.4, 1.7, 0.4));
+      playerBox.setFromCenterAndSize(new THREE.Vector3(next.x, 0.9, next.z), new THREE.Vector3(0.5, 1.7, 0.5));
 
-      // Allow free movement without collision for now
-      player.copy(next);
+      // Check collision against all mesh colliders
+      let colliding = false;
+      for (let box of meshColliders) {
+        if (playerBox.intersectsBox(box)) {
+          colliding = true;
+          break;
+        }
+      }
+
+      if (!colliding) {
+        player.copy(next);
+      }
     }
 
     camera.position.set(player.x, ROOM.EYE_HEIGHT, player.z);
