@@ -71,24 +71,55 @@
 
 
   let model;
-  let modelCollisionRadius = 1.5; // Default fallback radius
-  
-  // SKIP GLTF LOADING FOR NOW - TEST COLLISION WITH BOX
   try {
-    throw new Error('Skipping GLTF for collision testing');
+    // Try to get GLTFLoader - it might be exposed different ways
+    let GLTFLoaderClass = window.THREE?.GLTFLoader || window.GLTFLoader;
+    
+    if (!GLTFLoaderClass) {
+      throw new Error('GLTFLoader not available');
+    }
+    
+    const loader = new GLTFLoaderClass();
+    const assetPath = './assets/claytable.glb';
+    console.log('Attempting to load GLB from:', assetPath);
+    const gltf = await new Promise((resolve, reject) => {
+      loader.load(assetPath, resolve, undefined, reject);
+    });
+    model = gltf.scene;
+    console.log('Model loaded successfully:', model);
+    model.position.set(10, -1.3, -5);
+    model.scale.set(0.4, 0.4, 0.4);
+    model.name = 'SoupBowl';
+    model.traverse(child => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        child.material.roughness = 0.6;
+        child.material.metalness = 0.1;
+      }
+    });
+    scene.add(model);
+    console.log('Model added to scene');
   } catch (error) {
-    console.log('Using box for collision testing');
+    console.error('Failed to load GLB model:', error);
+    console.error('Error details:', error.message, error.stack);
     const deskGeometry = new THREE.BoxGeometry(2.5, 1, 1.5);
     const deskMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
     const desk = new THREE.Mesh(deskGeometry, deskMaterial);
     desk.position.set(0, 0.5, 0);
     desk.castShadow = true;
     scene.add(desk);
-    
-    model = desk;
-    // Set collision radius based on box size
-    modelCollisionRadius = Math.max(2.5, 1.5) / 2 + 0.5; // Add buffer
-    console.log('Box created with collision radius:', modelCollisionRadius);
+
+    const bowlRadius = 0.4;
+    const bowlGeometry = new THREE.SphereGeometry(bowlRadius, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+    const bowlMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc, side: THREE.DoubleSide });
+    model = new THREE.Mesh(bowlGeometry, bowlMaterial);
+    model.position.set(0, 1, 0);
+    model.rotation.x = -Math.PI;
+    model.name = 'SoupBowl';
+    model.castShadow = true;
+    scene.add(model);
+    console.log('Using fallback procedural bowl');
   }
 
   const raycaster = new THREE.Raycaster();
@@ -149,18 +180,8 @@
     ArrowRight: 'panRight'
   };
 
-  window.addEventListener('keydown', e => { 
-    if (keyMap[e.code]) {
-      keys[keyMap[e.code]] = true;
-      console.log(`⌨️ KEY DOWN: ${e.code} -> ${keyMap[e.code]}`);
-    }
-  });
-  window.addEventListener('keyup', e => { 
-    if (keyMap[e.code]) {
-      keys[keyMap[e.code]] = false;
-      console.log(`⌨️ KEY UP: ${e.code}`);
-    }
-  });
+  window.addEventListener('keydown', e => { if (keyMap[e.code]) keys[keyMap[e.code]] = true; });
+  window.addEventListener('keyup', e => { if (keyMap[e.code]) keys[keyMap[e.code]] = false; });
 
   function onResize() {
     const w = canvas.clientWidth || window.innerWidth;
@@ -225,17 +246,10 @@
 
 
   let prev = performance.now();
-  let lastCollisionTime = 0;
-  let collisionCount = 0;
 
   function animate(t) {
     const dt = Math.min(0.05, (t - prev) / 1000);
     prev = t;
-    
-    // Debug: Log model status every frame (first 5 frames only)
-    if (collisionCount < 5) {
-      console.log(`Frame ${collisionCount}: Model=${!!model}, Radius=${modelCollisionRadius}, Forward/Strafe will be checked`);
-    }
 
     if (document.getElementById('paintWindow').style.display === 'flex') {
         renderer.render(scene, camera);
@@ -253,7 +267,6 @@
     const strafe = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
 
     if (forward || strafe) {
-      console.log(`🔵 MOVEMENT: forward=${forward}, strafe=${strafe}, model=${!!model}`);
       const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
       const vx = (sinY * -forward + cosY * strafe) * speed * dt;
       const vz = (cosY * -forward - sinY * strafe) * speed * dt;
@@ -263,27 +276,15 @@
       clamp(next);
       
       // Collision detection with model - prevent walking through it
-      if (!model) {
-        console.warn('⚠️ Model not defined yet, skipping collision');
+      const modelPos = new THREE.Vector3(0, 0, 0);
+      const distToModel = next.distanceTo(modelPos);
+      const collisionRadius = 2.5; // Larger radius to prevent walking through
+      
+      if (distToModel > collisionRadius) {
         player.x = next.x;
         player.z = next.z;
       } else {
-        const modelPos = model.position.clone();
-        // Only check horizontal distance (X and Z), ignore height (Y)
-        const distToModel = Math.sqrt((next.x - modelPos.x) ** 2 + (next.z - modelPos.z) ** 2);
-        const collisionThreshold = modelCollisionRadius + playerRadius;
-        
-        if (distToModel > collisionThreshold) {
-          player.x = next.x;
-          player.z = next.z;
-        } else {
-          collisionCount++;
-          const now = performance.now();
-          if (now - lastCollisionTime > 1000) { // Log collision every 1 second max
-            console.log(`🔴 COLLISION #${collisionCount}! Distance: ${distToModel.toFixed(2)} | Threshold: ${collisionThreshold.toFixed(2)} | Player: (${player.x.toFixed(1)}, ${player.z.toFixed(1)}) | Model: (${modelPos.x.toFixed(1)}, ${modelPos.z.toFixed(1)}) | Trying to move to: (${next.x.toFixed(1)}, ${next.z.toFixed(1)})`);
-            lastCollisionTime = now;
-          }
-        }
+        console.log('Collision detected! Distance:', distToModel);
       }
     }
 
