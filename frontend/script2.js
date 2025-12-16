@@ -416,12 +416,6 @@
   } catch (err) {
     console.error('Failed to create worry box:', err);
   }
-    
-    // Don't add to collision - bowl should be clickable/interactable
-    console.log('Added glazing bowl on top of claytable');
-  } catch (err) {
-    console.error('Failed to create glazing bowl:', err);
-  }
 
   // Input
   const raycaster = new THREE.Raycaster();
