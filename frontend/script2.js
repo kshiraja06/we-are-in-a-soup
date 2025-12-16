@@ -326,7 +326,7 @@
     glazingBowl = new THREE.Mesh(bowlGeometry, bowlMaterial);
     // Position bowl on top of claytable, centered
     // Bowl height is ~1.0 units, position it on the table
-    glazingBowl.position.set(tableCenter.x, tableTop + 0.6, tableCenter.z);
+    glazingBowl.position.set(tableCenter.x, tableTop + 1.2, tableCenter.z);
     glazingBowl.rotation.x = Math.PI; // Flip bowl right-side up
     glazingBowl.castShadow = true;
     glazingBowl.receiveShadow = true;
