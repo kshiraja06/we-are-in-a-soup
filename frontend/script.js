@@ -517,6 +517,7 @@ function initializeGlazing() {
   });
   
   glazing3DBowl = new THREE.Mesh(bowlGeometry, bowlMaterial);
+  glazing3DBowl.rotation.x = Math.PI; // Flip bowl right-side up
   glazing3DBowl.userData.textureCanvas = textureCanvas;
   glazing3DBowl.userData.textureContext = textureCtx;
   glazing3DBowl.userData.texture = texture;
@@ -607,10 +608,6 @@ function initializeGlazing() {
   
   document.getElementById("glazingGalleryBtn")?.addEventListener("click", () => {
     openBowlGallery();
-  });
-  
-  document.getElementById("glazingDownloadBtn")?.addEventListener("click", () => {
-    downloadFiredBowl();
   });
   
   // 3D canvas painting handlers - paint on the bowl texture
@@ -962,132 +959,12 @@ async function saveBowl() {
   }
 }
 
-async function downloadFiredBowl() {
-  if (!glazing3DBowl || !glazing3DBowl.userData.textureCanvas) {
-    updateGlazingStatus("Error: Bowl not found");
-    return;
-  }
-  
-  // Check if gif.js is available
-  if (typeof GIF === 'undefined') {
-    updateGlazingStatus("Error: GIF library not loaded. Please refresh the page.");
-    alert("GIF library not available. Please refresh the page.");
-    return;
-  }
-  
-  updateGlazingStatus("Creating animated GIF... This may take a moment.");
-  
-  try {
-    // Create a temporary canvas for rendering the 3D bowl at different angles
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = 512;
-    tempCanvas.height = 512;
-    
-    // Create a temporary 3D scene for rendering
-    const tempRenderer = new THREE.WebGLRenderer({ canvas: tempCanvas, antialias: true, alpha: true });
-    tempRenderer.setSize(512, 512);
-    const tempScene = new THREE.Scene();
-    tempScene.background = null;
-    
-    // Create camera
-    const tempCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
-    tempCamera.position.set(4, 3, 5);
-    tempCamera.lookAt(0, 0, 0);
-    
-    // Clone the bowl for animation
-    const bowlGeometry = glazing3DBowl.geometry.clone();
-    const bowlMaterial = glazing3DBowl.material.clone();
-    const tempBowl = new THREE.Mesh(bowlGeometry, bowlMaterial);
-    tempScene.add(tempBowl);
-    
-    // Add lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    tempScene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
-    directionalLight.position.set(5, 5, 5);
-    tempScene.add(directionalLight);
-    
-    // Initialize GIF encoder - use worker from CDN
-    const gif = new GIF({
-      workers: 2,
-      quality: 10,
-      width: 512,
-      height: 512,
-      workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
-    });
-    
-    // Render bowl at different rotation angles to create animation
-    const numFrames = 24; // 24 frames for smooth rotation
-    const rotationStep = (Math.PI * 2) / numFrames;
-    
-    // Render all frames first
-    const frames = [];
-    for (let i = 0; i < numFrames; i++) {
-      tempBowl.rotation.y = i * rotationStep;
-      tempRenderer.render(tempScene, tempCamera);
-      
-      // Get canvas data for this frame
-      const frameCanvas = document.createElement('canvas');
-      frameCanvas.width = 512;
-      frameCanvas.height = 512;
-      const frameCtx = frameCanvas.getContext('2d');
-      frameCtx.drawImage(tempCanvas, 0, 0);
-      frames.push(frameCanvas);
-    }
-    
-    // Add frames to GIF
-    frames.forEach(frame => {
-      gif.addFrame(frame, { delay: 200 }); // 200ms delay between frames
-    });
-    
-    // Add error handler
-    gif.on('error', function(error) {
-      console.error('GIF creation error:', error);
-      updateGlazingStatus("Error creating GIF: " + error.message);
-      alert("Error creating GIF. Please try again.");
-      tempRenderer.dispose();
-      tempBowl.geometry.dispose();
-      tempBowl.material.dispose();
-    });
-    
-    // Render the GIF
-    gif.on('finished', function(blob) {
-      // Create download link
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "fired-bowl-animated.gif";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up
-      URL.revokeObjectURL(url);
-      tempRenderer.dispose();
-      tempBowl.geometry.dispose();
-      tempBowl.material.dispose();
-      
-      updateGlazingStatus("Animated GIF downloaded! Enjoy your rotating bowl.");
-      
-      // Reset status after 3 seconds
-      setTimeout(() => {
-        updateGlazingStatus("Ready");
-      }, 3000);
-    });
-    
-    gif.render();
-  } catch (error) {
-    console.error('Error creating GIF:', error);
-    updateGlazingStatus("Error creating GIF: " + error.message);
-    alert("Error creating GIF. Please try again.");
-  }
-}
+
 
 // Function to update table progress overlay (called from script2.js)
 function updateTableProgress() {
   const progressBar = document.getElementById("tableProgressBar");
   const progressText = document.getElementById("tableProgressText");
-  const downloadBtn = document.getElementById("glazingDownloadBtn");
   
   if (!progressBar || !progressText) return;
   
@@ -1097,15 +974,6 @@ function updateTableProgress() {
   
   progressBar.style.width = percent + "%";
   progressText.textContent = `${visited} / ${total} tables visited`;
-  
-  // Show download button only if all tables visited, hide otherwise
-  if (downloadBtn) {
-    if (visited >= total) {
-      downloadBtn.style.display = "block";
-    } else {
-      downloadBtn.style.display = "none";
-    }
-  }
 }
 
 // Expose functions globally
