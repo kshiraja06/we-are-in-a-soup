@@ -31,14 +31,14 @@
   let yaw = 0, pitch = 0;
 
   // Lighting
-  scene.add(new THREE.HemisphereLight(#fff2cc, #9fc5e8, 0.3));
-  const dir = new THREE.DirectionalLight(#fff2cc, 0.3);
+  scene.add(new THREE.HemisphereLight(0xfff2cc, 0x9fc5e8, 0.3));
+  const dir = new THREE.DirectionalLight(0xfff2cc, 0.3);
   dir.position.set(20, 30, 20);
   dir.castShadow = true;
   dir.shadow.mapSize.width = 2048;
   dir.shadow.mapSize.height = 2048;
   scene.add(dir);
-  scene.add(new THREE.AmbientLight(#fff2cc, 0.5));
+  scene.add(new THREE.AmbientLight(0xfff2cc, 0.5));
 
   let model;
   let meshColliders = [];
