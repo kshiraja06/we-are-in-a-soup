@@ -342,7 +342,8 @@
     const innerMaterial = new THREE.MeshStandardMaterial({
       color: 0xc9b899,  // Slightly darker ceramic color for inside
       roughness: 0.5,
-      metalness: 0.0
+      metalness: 0.0,
+      side: THREE.DoubleSide  // Render both sides so we can see the inside
     });
     const innerBowl = new THREE.Mesh(innerBowlGeometry, innerMaterial);
     
