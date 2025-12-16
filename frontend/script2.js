@@ -66,6 +66,12 @@
     // Make the entire classroom environment even larger (3x)
     model.scale.setScalar(3);
     
+    // Add model to scene first so matrix world gets updated
+    scene.add(model);
+    
+    // Update matrix world to apply transformations
+    model.updateMatrixWorld(true);
+    
     model.traverse(m => {
       if (m.isMesh) {
         m.castShadow = true;
@@ -88,20 +94,22 @@
         }
         // Check if this is a collision mesh (name contains "coll_")
         if (m.name.toLowerCase().includes('coll_')) {
+          // Update this mesh's matrix world to get correct world space bounds
+          m.updateMatrixWorld(true);
           const box = new THREE.Box3().setFromObject(m);
           meshColliders.push(box);
           console.log('Found collision mesh:', m.name, 'bounds:', box.min, 'to', box.max);
         }
       }
     });
-    scene.add(model);
 
-    // If no collision meshes found, create default room boundaries
+    // If no collision meshes found, create default room boundaries (scaled by 3x)
     if (meshColliders.length === 0) {
       console.log('No collision meshes found, creating default room boundaries');
-      roomCenter = new THREE.Vector3(0, 3, 0);
-      const minX = -10, maxX = 10, minY = 0, maxY = 6, minZ = -10, maxZ = 10;
-      const thickness = 0.3;
+      roomCenter = new THREE.Vector3(0, 9, 0); // Scaled Y position
+      const scale = 3; // Match model scale
+      const minX = -10 * scale, maxX = 10 * scale, minY = 0, maxY = 6 * scale, minZ = -10 * scale, maxZ = 10 * scale;
+      const thickness = 0.3 * scale;
       
       // Floor
       meshColliders.push(new THREE.Box3(
@@ -267,10 +275,7 @@
     }
   });
 
-  const clamp = pos => {
-    pos.x = Math.max(-25, Math.min(25, pos.x));
-    pos.z = Math.max(-25, Math.min(25, pos.z));
-  };
+  // Clamp removed - relying on colliders for boundary detection
 
   // Helper to update player collision box at a given position
   const updatePlayerBox = (pos) => {
@@ -339,7 +344,6 @@
       const next = player.clone();
       next.x += dx;
       next.z += dz;
-      clamp(next);
 
       // Collision check against coll_* meshes from Blender
       updatePlayerBox(next);
