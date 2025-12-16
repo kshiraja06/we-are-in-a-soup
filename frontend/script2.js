@@ -380,7 +380,7 @@
     // Create a simple box for the worry station - make it more visible
     const worryBoxGeometry = new THREE.BoxGeometry(2.0, 2.2, 1.5);
     const worryBoxMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0xe8d5b7, // Warm paper-like color
+      color: "blue", // Warm paper-like color
       roughness: 0.7,
       metalness: 0.0,
       emissive: 0xd4c5a9,
@@ -390,7 +390,7 @@
     
     // Position worry box in the scene (closer to player spawn for visibility)
     // Player starts at (70, 3.5, 10), so put worry box right next to them
-    worryBox.position.set(75, 2.5, 15);
+    worryBox.position.set(61, 1, -15);
     worryBox.castShadow = true;
     worryBox.receiveShadow = true;
     

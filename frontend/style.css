@@ -622,57 +622,80 @@ input[type=range] {
 
 /* Worry Box Styles */
 .worry-window {
-  background: #f5f0e8;
-  border: none;
-  border-radius: 12px;
+  background: #f9f6f0;
+  border: 2px solid #8b7355;
+  border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  /* Scalloped edge effect using multiple box-shadows */
-  outline: 2px solid #f5f0e8;
-  outline-offset: -8px;
   position: relative;
   z-index: 10000;
+  width: 520px !important;
 }
 
-/* Scalloped border effect */
+/* Spiral binding effect on left */
 .worry-window::before {
   content: '';
   position: absolute;
-  top: -8px;
-  left: -8px;
-  right: -8px;
-  bottom: -8px;
-  background: 
-    radial-gradient(circle at 8px 8px, transparent 8px, #f5f0e8 8px),
-    radial-gradient(circle at 8px -8px, transparent 8px, #f5f0e8 8px),
-    radial-gradient(circle at -8px 8px, transparent 8px, #f5f0e8 8px),
-    radial-gradient(circle at -8px -8px, transparent 8px, #f5f0e8 8px);
+  left: 12px;
+  top: 20px;
+  bottom: 20px;
+  width: 20px;
+  background: repeating-linear-gradient(
+    90deg,
+    #d4a574 0px,
+    #d4a574 3px,
+    transparent 3px,
+    transparent 6px,
+    #d4a574 6px,
+    #d4a574 9px,
+    transparent 9px,
+    transparent 12px
+  );
+  border-radius: 50%;
   pointer-events: none;
   z-index: -1;
-  border-radius: 12px;
 }
 
 .worry-window .titlebar {
-  background: #f5f0e8;
-  border-bottom: 2px solid #d4a574;
-  border-radius: 12px 12px 0 0;
+  background: #f9f6f0;
+  border-bottom: 1px solid #8b7355;
+  border-radius: 4px 4px 0 0;
   position: relative;
   z-index: 10001;
-  padding: 8px 12px;
+  padding: 10px 16px;
+  margin-left: 0;
+}
+
+.worry-window .titlebar span {
+  color: #3d2817;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: "Georgia", serif;
 }
 
 .worry-window .tbtn {
   z-index: 10002;
   position: relative;
+  color: #3d2817;
+  background: #f0e8d8;
+  border: 1px solid #8b7355;
+  font-size: 12px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.worry-window .tbtn:hover {
+  background: #e8dcc8;
 }
 
 .worry-content {
-  background: #f5f0e8;
-  padding: 20px;
-  min-height: 280px;
+  background: #f9f6f0;
+  padding: 16px 16px 16px 50px;
+  min-height: auto;
+  max-height: 320px;
   display: flex;
   flex-direction: column;
-  border-radius: 0 0 12px 12px;
-  font-family: "Segoe Print", "Comic Sans MS", cursive;
+  border-radius: 0 0 4px 4px;
+  font-family: "Georgia", serif;
   position: relative;
   z-index: 9999;
 }
@@ -681,6 +704,57 @@ input[type=range] {
   flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 8px;
+}
+
+/* Lined notebook effect for textarea */
+#worryInput {
+  background-image: 
+    repeating-linear-gradient(
+      transparent,
+      transparent 23px,
+      #8b7355 23px,
+      #8b7355 24px
+    );
+  background-position: 0 8px;
+  background-size: 100% 24px;
+  padding: 8px 12px !important;
+  line-height: 24px !important;
+  font-size: 13px !important;
+  font-family: "Georgia", serif !important;
+  color: #3d2817 !important;
+  border: 1px solid #8b7355 !important;
+  border-radius: 2px !important;
+  resize: none !important;
+  box-sizing: border-box !important;
+  min-height: 140px !important;
+  max-height: 140px !important;
+}
+
+#worryInput::placeholder {
+  color: #a89080;
+}
+
+.worry-panel button {
+  background: #8b7355;
+  color: #f9f6f0;
+  border: 1px solid #5d4037;
+  border-radius: 3px;
+  padding: 8px 12px !important;
+  font-family: "Georgia", serif;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin: 4px 0;
+}
+
+.worry-panel button:hover {
+  background: #6b5344;
+}
+
+.worry-panel button:active {
+  background: #5d4037;
 }
 
 #worryGalleryGrid {
@@ -722,10 +796,10 @@ input[type=range] {
   background: #fff9e6;
 }
 
-
 #worryStatus {
   font-size: 11px;
-  color: #666;
+  color: #8b7355;
   margin-top: 8px;
   min-height: 14px;
+  font-family: "Georgia", serif;
 }
