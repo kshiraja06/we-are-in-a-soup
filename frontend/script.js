@@ -1007,40 +1007,62 @@ async function saveBowl() {
 }
 
 // ===== WORRY BOX SYSTEM =====
-document.addEventListener('DOMContentLoaded', function() {
-  // Worry box window controls
-  document.getElementById("worryMinBtn")?.addEventListener("click", () => {
-    const w = document.getElementById("worryWindow");
-    if (w) w.style.display = (w.style.display === "none") ? "flex" : "none";
-  });
-  
-  document.getElementById("worryMaxBtn")?.addEventListener("click", () => {
-    const w = document.getElementById("worryWindow");
-    if (!w) return;
-    if (!w.classList.contains("max")) {
-      w.style.position = "fixed";
-      w.style.left = "12px";
-      w.style.top = "12px";
-      w.style.width = "calc(100vw - 24px)";
-      w.style.height = "calc(100vh - 24px)";
-      w.classList.add("max");
-    } else {
-      w.style.width = "600px";
-      w.style.height = "";
-      w.style.left = "";
-      w.style.top = "";
-      w.style.position = "";
-      w.classList.remove("max");
-    }
-  });
 
-  document.getElementById("worryCloseBtn")?.addEventListener("click", () => {
-    const worryWindow = document.getElementById("worryWindow");
-    if (worryWindow) {
-      worryWindow.style.display = "none";
-      worryWindow.classList.add("hidden-init");
-    }
-  });
+// Initialize worry box window controls and events
+function initializeWorryBox() {
+  console.log('Initializing worry box...');
+  
+  // Worry box window controls
+  const worryMinBtn = document.getElementById("worryMinBtn");
+  const worryMaxBtn = document.getElementById("worryMaxBtn");
+  const worryCloseBtn = document.getElementById("worryCloseBtn");
+  const worrySubmitBtn = document.getElementById("worrySubmitBtn");
+  const worryViewGalleryBtn = document.getElementById("worryViewGalleryBtn");
+  const worryBackBtn = document.getElementById("worryBackBtn");
+  
+  console.log('Worry buttons found:', { worryMinBtn, worryMaxBtn, worryCloseBtn, worrySubmitBtn });
+
+  if (worryMinBtn) {
+    worryMinBtn.addEventListener("click", () => {
+      console.log('Minimize clicked');
+      const w = document.getElementById("worryWindow");
+      if (w) w.style.display = (w.style.display === "none") ? "flex" : "none";
+    });
+  }
+  
+  if (worryMaxBtn) {
+    worryMaxBtn.addEventListener("click", () => {
+      console.log('Maximize clicked');
+      const w = document.getElementById("worryWindow");
+      if (!w) return;
+      if (!w.classList.contains("max")) {
+        w.style.position = "fixed";
+        w.style.left = "12px";
+        w.style.top = "12px";
+        w.style.width = "calc(100vw - 24px)";
+        w.style.height = "calc(100vh - 24px)";
+        w.classList.add("max");
+      } else {
+        w.style.width = "600px";
+        w.style.height = "";
+        w.style.left = "";
+        w.style.top = "";
+        w.style.position = "";
+        w.classList.remove("max");
+      }
+    });
+  }
+
+  if (worryCloseBtn) {
+    worryCloseBtn.addEventListener("click", () => {
+      console.log('Close clicked');
+      const worryWindow = document.getElementById("worryWindow");
+      if (worryWindow) {
+        worryWindow.style.display = "none";
+        worryWindow.classList.add("hidden-init");
+      }
+    });
+  }
 
   // Make worry window draggable
   const worryWin = document.getElementById("worryWindow");
@@ -1071,10 +1093,26 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // Worry submission
-  document.getElementById("worrySubmitBtn")?.addEventListener("click", submitWorry);
-  document.getElementById("worryViewGalleryBtn")?.addEventListener("click", openWorryGallery);
-  document.getElementById("worryBackBtn")?.addEventListener("click", backToWorryInput);
-});
+  if (worrySubmitBtn) {
+    worrySubmitBtn.addEventListener("click", submitWorry);
+    console.log('Submit button listener attached');
+  }
+  if (worryViewGalleryBtn) {
+    worryViewGalleryBtn.addEventListener("click", openWorryGallery);
+    console.log('View gallery button listener attached');
+  }
+  if (worryBackBtn) {
+    worryBackBtn.addEventListener("click", backToWorryInput);
+    console.log('Back button listener attached');
+  }
+}
+
+// Call initialization immediately and also on DOMContentLoaded
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeWorryBox);
+} else {
+  initializeWorryBox();
+}
 
 async function submitWorry() {
   const input = document.getElementById("worryInput");
