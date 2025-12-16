@@ -619,3 +619,71 @@ input[type=range] {
   color: var(--muted);
   text-align: center;
 }
+
+/* Worry Box Styles */
+.worry-window {
+  background: #dcd7d0;
+  border: 2px solid;
+  border-color: #fff #6b6b6b #6b6b6b #fff;
+  box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080;
+}
+
+.worry-content {
+  background: #c0c0c0;
+  padding: 12px;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+}
+
+.worry-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+#worryGalleryGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 8px;
+  background: #f0f0f0;
+  border: 1px inset #999;
+  border-radius: 3px;
+}
+
+.worry-chit {
+  width: 140px;
+  min-height: 140px;
+  background: #fffacd;
+  border: 1px solid #ddd;
+  border-radius: 2px;
+  padding: 12px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #333;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.15);
+  transform: rotate(-2deg);
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  font-family: "Comic Sans MS", cursive, sans-serif;
+  overflow-y: auto;
+  max-height: 140px;
+}
+
+.worry-chit:nth-child(even) {
+  transform: rotate(2deg);
+}
+
+.worry-chit:nth-child(3n) {
+  background: #fff9e6;
+}
+
+#worryStatus {
+  font-size: 11px;
+  color: #666;
+  margin-top: 8px;
+  min-height: 14px;
+}

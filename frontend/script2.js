@@ -66,8 +66,8 @@
   let glazingBowl; // Placeholder bowl for glazing
   let roomCenter = new THREE.Vector3(0, 0, 0);
   
-  // Table visit tracking - 2 tables: bowl glazing and claytable soup painting
-  const TOTAL_TABLES = 2;
+  // Table visit tracking - 3 stations: bowl glazing, claytable soup painting, and worry box
+  const TOTAL_TABLES = 3;
   let tablesVisited = 0;
   window.tablesVisited = 0; // Make globally accessible
   window.TOTAL_TABLES = TOTAL_TABLES;
@@ -369,6 +369,54 @@
     // Make bowl globally accessible for glazing system
     window.glazingBowl = glazingBowl;
     
+    console.log('Added glazing bowl on top of claytable');
+  } catch (err) {
+    console.error('Failed to create glazing bowl:', err);
+  }
+
+  // Add worry box placeholder
+  let worryBox;
+  try {
+    // Create a simple box for the worry station
+    const worryBoxGeometry = new THREE.BoxGeometry(1.5, 1.8, 1.2);
+    const worryBoxMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0xe8d5b7, // Warm paper-like color
+      roughness: 0.7,
+      metalness: 0.0
+    });
+    worryBox = new THREE.Mesh(worryBoxGeometry, worryBoxMaterial);
+    
+    // Position worry box in the scene (away from other tables)
+    worryBox.position.set(-60, 2.5, -50);
+    worryBox.castShadow = true;
+    worryBox.receiveShadow = true;
+    
+    scene.add(worryBox);
+    
+    // Add a label on top as a separate mesh
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 36px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('worry box', 128, 60);
+    ctx.font = '20px Arial';
+    ctx.fillText('📝 share your worries', 128, 95);
+    
+    const labelTexture = new THREE.CanvasTexture(canvas);
+    const labelMaterial = new THREE.MeshStandardMaterial({ map: labelTexture, roughness: 0.6 });
+    const labelGeometry = new THREE.PlaneGeometry(2, 0.8);
+    const label = new THREE.Mesh(labelGeometry, labelMaterial);
+    label.position.z = 0.61;
+    worryBox.add(label);
+    
+    console.log('Added worry box to scene');
+  } catch (err) {
+    console.error('Failed to create worry box:', err);
+  }
+    
     // Don't add to collision - bowl should be clickable/interactable
     console.log('Added glazing bowl on top of claytable');
   } catch (err) {
@@ -485,6 +533,27 @@
           if (typeof window.initializeGlazing === 'function') {
             setTimeout(() => window.initializeGlazing(), 10);
           }
+        }
+      }
+    }
+
+    // Check if clicking on worry box
+    if (worryBox) {
+      const intersects = raycaster.intersectObject(worryBox, true);
+      if (intersects.length) {
+        // Mark worry box as visited
+        if (!window.worryBoxVisited) {
+          window.worryBoxVisited = true;
+          window.tablesVisited = (window.tablesVisited || 0) + 1;
+          if (typeof window.updateTableProgress === 'function') {
+            window.updateTableProgress();
+          }
+        }
+
+        const worryWindow = document.getElementById("worryWindow");
+        if (worryWindow) {
+          worryWindow.style.display = "flex";
+          worryWindow.classList.remove("hidden-init");
         }
       }
     }

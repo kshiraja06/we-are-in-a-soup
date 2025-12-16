@@ -1006,6 +1006,166 @@ async function saveBowl() {
   }
 }
 
+// ===== WORRY BOX SYSTEM =====
+document.addEventListener('DOMContentLoaded', function() {
+  // Worry box window controls
+  document.getElementById("worryMinBtn")?.addEventListener("click", () => {
+    const w = document.getElementById("worryWindow");
+    if (w) w.style.display = (w.style.display === "none") ? "flex" : "none";
+  });
+  
+  document.getElementById("worryMaxBtn")?.addEventListener("click", () => {
+    const w = document.getElementById("worryWindow");
+    if (!w) return;
+    if (!w.classList.contains("max")) {
+      w.style.position = "fixed";
+      w.style.left = "12px";
+      w.style.top = "12px";
+      w.style.width = "calc(100vw - 24px)";
+      w.style.height = "calc(100vh - 24px)";
+      w.classList.add("max");
+    } else {
+      w.style.width = "600px";
+      w.style.height = "";
+      w.style.left = "";
+      w.style.top = "";
+      w.style.position = "";
+      w.classList.remove("max");
+    }
+  });
+
+  document.getElementById("worryCloseBtn")?.addEventListener("click", () => {
+    const worryWindow = document.getElementById("worryWindow");
+    if (worryWindow) {
+      worryWindow.style.display = "none";
+      worryWindow.classList.add("hidden-init");
+    }
+  });
+
+  // Make worry window draggable
+  const worryWin = document.getElementById("worryWindow");
+  const worryTitle = worryWin?.querySelector(".titlebar");
+  let worryDrag = false, worryOff = {x: 0, y: 0};
+  
+  if (worryTitle) {
+    worryTitle.addEventListener("mousedown", (e) => {
+      if (e.target.closest(".tbtn")) return;
+      worryDrag = true;
+      const r = worryWin.getBoundingClientRect();
+      worryOff.x = e.clientX - r.left;
+      worryOff.y = e.clientY - r.top;
+      worryWin.style.transition = "none";
+    });
+  }
+
+  window.addEventListener("mousemove", (e) => {
+    if (!worryDrag || !worryWin) return;
+    worryWin.style.left = (e.clientX - worryOff.x) + "px";
+    worryWin.style.top = (e.clientY - worryOff.y) + "px";
+    worryWin.style.position = "fixed";
+  });
+
+  window.addEventListener("mouseup", () => {
+    worryDrag = false;
+    if (worryWin) worryWin.style.transition = "box-shadow .2s";
+  });
+
+  // Worry submission
+  document.getElementById("worrySubmitBtn")?.addEventListener("click", submitWorry);
+  document.getElementById("worryViewGalleryBtn")?.addEventListener("click", openWorryGallery);
+  document.getElementById("worryBackBtn")?.addEventListener("click", backToWorryInput);
+});
+
+async function submitWorry() {
+  const input = document.getElementById("worryInput");
+  const status = document.getElementById("worryStatus");
+  const submitBtn = document.getElementById("worrySubmitBtn");
+  
+  const worry = input.value.trim();
+  if (!worry) {
+    if (status) status.textContent = "please write something...";
+    return;
+  }
+
+  if (submitBtn) submitBtn.disabled = true;
+  if (status) status.textContent = "sharing your worry...";
+
+  try {
+    const response = await fetch('/api/worries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ worry })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    if (status) status.textContent = "worry shared anonymously 💫";
+    if (input) input.value = "";
+    
+    // Clear status after 2 seconds
+    setTimeout(() => {
+      if (status) status.textContent = "";
+    }, 2000);
+  } catch (error) {
+    console.error('Error submitting worry:', error);
+    if (status) status.textContent = "error sharing: " + error.message;
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+
+async function openWorryGallery() {
+  const inputPanel = document.getElementById("worryInputPanel");
+  const galleryPanel = document.getElementById("worryGalleryPanel");
+  
+  if (inputPanel) inputPanel.style.display = "none";
+  if (galleryPanel) galleryPanel.style.display = "flex";
+
+  await loadWorryGallery();
+}
+
+function backToWorryInput() {
+  const inputPanel = document.getElementById("worryInputPanel");
+  const galleryPanel = document.getElementById("worryGalleryPanel");
+  
+  if (galleryPanel) galleryPanel.style.display = "none";
+  if (inputPanel) inputPanel.style.display = "flex";
+}
+
+async function loadWorryGallery() {
+  const grid = document.getElementById("worryGalleryGrid");
+  if (!grid) return;
+
+  grid.innerHTML = "<div style='color:#999; width: 100%'>loading...</div>";
+
+  try {
+    const response = await fetch('/api/worries?t=' + Date.now());
+    if (!response.ok) {
+      grid.innerHTML = "<div style='color:#f77'>error loading worries</div>";
+      return;
+    }
+
+    const worries = await response.json();
+    grid.innerHTML = "";
+
+    if (worries.length === 0) {
+      grid.innerHTML = "<div style='color:#999'>no worries shared yet. be the first!</div>";
+      return;
+    }
+
+    worries.forEach(worry => {
+      const chit = document.createElement('div');
+      chit.className = 'worry-chit';
+      chit.textContent = worry.text;
+      grid.appendChild(chit);
+    });
+  } catch (error) {
+    console.error('Error loading worries:', error);
+    grid.innerHTML = "<div style='color:#f77'>error loading worries</div>";
+  }
+}
 
 
 // Function to update table progress overlay (called from script2.js)
