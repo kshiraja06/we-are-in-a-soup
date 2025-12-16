@@ -468,30 +468,30 @@ function initializeGlazing() {
   
   // Create camera - position at an angle to show 3D shape better (adjusted for larger bowl)
   glazing3DCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
-  glazing3DCamera.position.set(4, 3, 5); // Moved back and up for larger bowl
+  glazing3DCamera.position.set(2.5, 2, 3.2); // Moved closer to make bowl appear bigger
   glazing3DCamera.lookAt(0, -1, 0); // Look slightly higher to center bowl
   
   // Create bowl for glazing view - use texture from main bowl if available, otherwise create new
   // Make it bigger and taller for better painting visibility
   // Use LatheGeometry to match the main bowl shape
   const points = [];
-  points.push(new THREE.Vector2(1.8, 0.0));   // Top rim, wider
-  points.push(new THREE.Vector2(1.7, 0.225)); // Curve down
-  points.push(new THREE.Vector2(1.35, 0.6));   // Bowl wall
-  points.push(new THREE.Vector2(1.125, 0.9));   // More curve
-  points.push(new THREE.Vector2(1.0125, 1.125)); // Lower curve
-  points.push(new THREE.Vector2(0.9, 1.425));  // Bottom, narrow
+  points.push(new THREE.Vector2(1.2, 0.0));   // Top rim, wider
+  points.push(new THREE.Vector2(1.125, 0.225)); // Curve down
+  points.push(new THREE.Vector2(0.9, 0.6));   // Bowl wall
+  points.push(new THREE.Vector2(0.75, 0.9));   // More curve
+  points.push(new THREE.Vector2(0.675, 1.125)); // Lower curve
+  points.push(new THREE.Vector2(0.6, 1.425));  // Bottom, narrow
   
   const bowlGeometry = new THREE.LatheGeometry(points, 32);
   
   // Create inner bowl geometry
   const innerPoints = [];
-  innerPoints.push(new THREE.Vector2(1.65, 0.1));   // Top rim, slightly inset
-  innerPoints.push(new THREE.Vector2(1.5, 0.3));   // Curve down
-  innerPoints.push(new THREE.Vector2(1.2, 0.75));  // Bowl wall
-  innerPoints.push(new THREE.Vector2(0.975, 1.05)); // More curve
-  innerPoints.push(new THREE.Vector2(0.8625, 1.275)); // Lower curve
-  innerPoints.push(new THREE.Vector2(0.825, 1.425));  // Bottom, slightly inset
+  innerPoints.push(new THREE.Vector2(1.1, 0.1));   // Top rim, slightly inset
+  innerPoints.push(new THREE.Vector2(1.0, 0.3));   // Curve down
+  innerPoints.push(new THREE.Vector2(0.8, 0.75));  // Bowl wall
+  innerPoints.push(new THREE.Vector2(0.65, 1.05)); // More curve
+  innerPoints.push(new THREE.Vector2(0.575, 1.275)); // Lower curve
+  innerPoints.push(new THREE.Vector2(0.55, 1.425));  // Bottom, slightly inset
   
   const innerBowlGeometry = new THREE.LatheGeometry(innerPoints, 32);
   
