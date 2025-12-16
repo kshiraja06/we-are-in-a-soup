@@ -24,11 +24,37 @@
       outline: none;
       margin: 0;
       padding: 0;
+      cursor: default;
     }
   </style>
 </head>
 <body>
   <canvas id="canvas"></canvas>
+
+  <!-- Table Visit Progress Overlay -->
+  <div id="tableProgressOverlay" class="table-progress-overlay">
+    <div class="progress-label">Table Visits</div>
+    <div class="progress-bar-small">
+      <div id="tableProgressBar" class="progress-fill-small" style="width: 0%"></div>
+    </div>
+    <div id="tableProgressText" class="progress-text-small">0 / 2 tables visited</div>
+  </div>
+
+  <!-- Intro Overlay -->
+  <div id="introOverlay" class="intro-overlay">
+    <div class="intro-content">
+      <div class="intro-inner">
+        <h1>we are in a soup</h1>
+        <div class="intro-tagline">a tiny 3d place for soup painting</div>
+        <div class="intro-instructions">
+          <p>• Use <strong>WASD</strong> to move around</p>
+          <p>• Move the mouse to look around</p>
+          <p>• Click on objects for fun !!!!</p>
+        </div>
+        <button id="startButton" class="start-button">start exploring</button>
+      </div>
+    </div>
+  </div>
 
   <div id="paintWindow" class="win hidden-init">
     <div class="titlebar">
@@ -85,9 +111,55 @@
     </div>
   </div>
 
+  <!-- Glazing Window -->
+  <div id="glazingWindow" class="win hidden-init">
+    <div class="titlebar">
+      <div class="title-left">
+        <div class="icon-sq"></div>
+        <div class="title-text">Bowl Glazing Studio</div>
+      </div>
+      <div class="title-right">
+        <button id="glazingMinBtn" class="tbtn">_</button>
+        <button id="glazingMaxBtn" class="tbtn">+</button>
+        <button id="glazingCloseBtn" class="tbtn close">X</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="sidebar">
+        <div class="tools-col">
+          <button id="glazingBrushTool" class="tool">Brush</button>
+          <button id="glazingEraserTool" class="tool">Eraser</button>
+          <button id="glazingClearBtn" class="tool">Clear</button>
+          <button id="glazingSaveBtn" class="tool">Save</button>
+          <button id="glazingDownloadBtn" class="tool" style="display: none;">Download GIF</button>
+        </div>
+        <div class="pal-wrap">
+          <div id="glazingPalette" class="palette"></div>
+          <div class="customWrap">
+            <input type="color" id="glazingColorWheel" value="#6b4f9a" />
+            <div class="small">Custom Color</div>
+          </div>
+        </div>
+        <div>
+          <div class="small">Brush Size:</div>
+          <input type="range" id="glazingSizeRange" min="4" max="64" value="12" />
+          <div id="glazingSizeVal" class="sizeVal">12</div>
+        </div>
+      </div>
+
+      <div class="canvasArea">
+        <canvas id="glazing3DCanvas" style="width: 580px; height: 580px; border-radius: 8px;"></canvas>
+      </div>
+    </div>
+    <div class="statusbar">
+      <span id="glazingStatus">Paint directly on the 3D bowl. Visit other tables to progress.</span>
+    </div>
+  </div>
+
   <link rel="stylesheet" href="./style.css?v=3" />
   <script src="https://unpkg.com/three@0.128.0/build/three.js"></script>
   <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://unpkg.com/gif.js@0.2.0/dist/gif.js"></script>
   <script src="./script.js?v=3"></script>
   <script src="./script2.js?v=3"></script>
 </body>

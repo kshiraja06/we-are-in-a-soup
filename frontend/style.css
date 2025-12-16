@@ -358,3 +358,256 @@ input[type=range] {
   text-align: center;
   font-style: italic;
 }
+
+/* Glazing Progress Bar */
+.glazing-progress-container {
+  width: 100%;
+  padding: 12px;
+  background: var(--panel);
+  border: 2px solid var(--bevel2);
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.progress-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 24px;
+  background: #e0e0e0;
+  border: 2px inset #808080;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50, #8bc34a);
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.phase-display {
+  padding: 8px;
+  background: #fff;
+  border: 2px solid var(--bevel2);
+  border-radius: 4px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 12px;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+#glazingWindow {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); 
+  z-index: 2001;
+}
+
+/* Intro Overlay - Windows 95/98 Style */
+@font-face {
+  font-family: 'PixelFont';
+  src: local('Courier New'), local('monospace');
+  font-size: 50px;
+}
+
+.intro-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3); /* Semi-transparent dark backdrop */
+  display: none; /* Start hidden, will be shown after scene loads */
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+  cursor: default;
+}
+
+.intro-overlay.visible {
+  display: flex;
+}
+
+.intro-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.intro-content {
+  text-align: left;
+  color: #000;
+  padding: 0;
+  width: 700px;
+  background: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  box-shadow: 
+    inset -2px -2px 0 #808080,
+    inset 2px 2px 0 #ffffff;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 50px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  position: relative;
+}
+
+/* Windows 95 style title bar */
+.intro-content::before {
+  content: "we are in a soup - start page";
+  display: block;
+  background: linear-gradient(to bottom, #000080 0%, #1084d0 100%);
+  color: #ffffff;
+  padding: 3px 4px 3px 20px;
+  font-size: 11px;
+  font-weight: bold;
+  font-family: 'MS Sans Serif', 'Courier New', monospace;
+  border-bottom: 1px solid #000;
+  letter-spacing: 0.5px;
+  position: relative;
+}
+
+.intro-content::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 14px;
+  background: #c0c0c0;
+  border: 1px outset #c0c0c0;
+  z-index: 1;
+}
+
+.intro-inner {
+  padding: 20px 24px 24px 24px;
+  background: #ffffff;
+  margin: 2px;
+  border: 1px inset #808080;
+}
+
+.intro-content h1 {
+  font-size: 24px;
+  margin: 0 0 12px 0;
+  font-weight: bold;
+  color: #000;
+  font-family: 'Courier New', Courier, monospace;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.intro-tagline {
+  font-size: 13px;
+  color: #000;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #c0c0c0;
+  padding-bottom: 8px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.intro-instructions {
+  margin: 16px 0 20px 0;
+  line-height: 2;
+  font-size: 13px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.intro-instructions p {
+  margin: 8px 0;
+  color: #000;
+}
+
+.intro-instructions strong {
+  color: #000;
+  font-weight: bold;
+}
+
+.start-button {
+  margin-top: 24px;
+  padding: 10px 32px;
+  font-size: 13px;
+  font-weight: bold;
+  background: #c0c0c0;
+  color: #000;
+  border: 2px outset #c0c0c0;
+  cursor: pointer;
+  font-family: 'MS Sans Serif', 'Courier New', monospace;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 
+    inset -2px -2px 0 #808080,
+    inset 2px 2px 0 #ffffff;
+}
+
+.start-button:hover {
+  background: #d4d0c8;
+}
+
+.start-button:active {
+  border: 2px inset #c0c0c0;
+  box-shadow: 
+    inset 2px 2px 0 #808080,
+    inset -2px -2px 0 #ffffff;
+}
+
+/* Table Visit Progress Overlay - Always visible on screen */
+.table-progress-overlay {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px 16px;
+  border: 2px solid var(--bevel2);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+  z-index: 5000;
+  min-width: 180px;
+}
+
+.progress-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.progress-bar-small {
+  width: 100%;
+  height: 18px;
+  background: #e0e0e0;
+  border: 2px inset #808080;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.progress-fill-small {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50, #8bc34a);
+  transition: width 0.3s ease;
+}
+
+.progress-text-small {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+}

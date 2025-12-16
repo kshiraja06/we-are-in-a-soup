@@ -218,7 +218,7 @@ async function loadGallery() {
       img.alt = painting.name;
       const nameEl = document.createElement('div');
       nameEl.className = 'thumb-name';
-      nameEl.textContent = painting.name;
+      nameEl.textContent = painting.name + (painting.type === 'bowl' ? ' (Bowl)' : '');
       const downloadBtn = document.createElement('button');
       downloadBtn.className = 'tool';
       downloadBtn.textContent = 'Download';
@@ -323,7 +323,7 @@ async function openGallery(){
       img.alt=painting.name;
       const nameEl=document.createElement("div");
       nameEl.className="thumb-name";
-      nameEl.textContent=painting.name;
+      nameEl.textContent=painting.name + (painting.type === 'bowl' ? ' (Bowl)' : '');
       const downloadBtn=document.createElement("button");
       downloadBtn.className="tool";
       downloadBtn.textContent="Download";
@@ -373,4 +373,607 @@ window.addEventListener("mouseup",()=>{ drag=false; win.style.transition="box-sh
 
 // Expose initializeCanvas globally for script2.js
 window.initializeCanvas = initializeCanvas;
+
+// Glazing System - Paint directly on 3D bowl
+let glazing3DRenderer, glazing3DScene, glazing3DCamera, glazing3DBowl;
+let glazingBrushSize = 12, glazingBrushColor = "#6b4f9a", glazingMode = "brush";
+let glazingPainting = false;
+let glazingRaycaster = new THREE.Raycaster();
+let glazingPointer = new THREE.Vector2();
+const TOTAL_TABLES = 9; // Total number of tables to visit
+let tablesVisited = 0; // Track how many tables user has visited
+
+function initializeGlazing() {
+  const glazingCanvas = document.getElementById("glazing3DCanvas");
+  if (!glazingCanvas) return;
+  
+  const THREE = window.THREE;
+  if (!THREE) {
+    console.error("THREE.js not available for glazing");
+    return;
+  }
+  
+  // Create 3D renderer for glazing window
+  glazing3DRenderer = new THREE.WebGLRenderer({ canvas: glazingCanvas, antialias: true });
+  glazing3DRenderer.setSize(580, 580);
+  glazing3DRenderer.shadowMap.enabled = true;
+  
+  // Create scene
+  glazing3DScene = new THREE.Scene();
+  glazing3DScene.background = new THREE.Color(0xf5f5f5);
+  
+  // Create camera - position at an angle to show 3D shape better (adjusted for larger bowl)
+  glazing3DCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
+  glazing3DCamera.position.set(4, 3, 5); // Moved back and up for larger bowl
+  glazing3DCamera.lookAt(0, 0, 0);
+  
+  // Create bowl for glazing view - use texture from main bowl if available, otherwise create new
+  // Make it bigger and taller for better painting visibility
+  const bowlRadius = 1.2; // Bigger radius
+  const bowlHeight = 1.5; // Taller
+  const bowlGeometry = new THREE.CylinderGeometry(bowlRadius, bowlRadius, bowlHeight, 32, 1, true); // Perfectly circular
+  
+  let textureCanvas, textureCtx, texture;
+  
+  // Use main bowl's texture if available, otherwise create new
+  if (window.glazingBowl && window.glazingBowl.userData.textureCanvas) {
+    textureCanvas = window.glazingBowl.userData.textureCanvas;
+    textureCtx = window.glazingBowl.userData.textureContext;
+    texture = window.glazingBowl.userData.texture;
+  } else {
+    // Create new texture
+    const textureSize = 512;
+    textureCanvas = document.createElement('canvas');
+    textureCanvas.width = textureSize;
+    textureCanvas.height = textureSize;
+    textureCtx = textureCanvas.getContext('2d');
+    textureCtx.fillStyle = '#e8d5b7';
+    textureCtx.fillRect(0, 0, textureSize, textureSize);
+    
+    texture = new THREE.CanvasTexture(textureCanvas);
+    texture.needsUpdate = true;
+  }
+  
+  // Make bowl shinier to match main bowl
+  const bowlMaterial = new THREE.MeshStandardMaterial({ 
+    map: texture,
+    roughness: 0.3, // Lower = shinier
+    metalness: 0.4  // Higher = more metallic/shiny
+  });
+  
+  glazing3DBowl = new THREE.Mesh(bowlGeometry, bowlMaterial);
+  glazing3DBowl.userData.textureCanvas = textureCanvas;
+  glazing3DBowl.userData.textureContext = textureCtx;
+  glazing3DBowl.userData.texture = texture;
+  glazing3DScene.add(glazing3DBowl);
+  
+  // Lighting
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  glazing3DScene.add(ambientLight);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
+  directionalLight.position.set(5, 5, 5);
+  glazing3DScene.add(directionalLight);
+  
+  // Sync texture with main bowl
+  window.glazing3DBowl = glazing3DBowl; // Make accessible
+  
+  // Load saved bowl texture if it exists
+  const savedBowl = localStorage.getItem('glazedBowl');
+  if (savedBowl) {
+    const img = new Image();
+    img.onload = () => {
+      textureCtx.clearRect(0, 0, textureCanvas.width, textureCanvas.height);
+      textureCtx.drawImage(img, 0, 0);
+      texture.needsUpdate = true;
+      
+      // Also update main bowl if it exists
+      if (window.glazingBowl && window.glazingBowl.userData.textureContext) {
+        const mainCtx = window.glazingBowl.userData.textureContext;
+        const mainCanvas = window.glazingBowl.userData.textureCanvas;
+        const mainTexture = window.glazingBowl.userData.texture;
+        mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+        mainCtx.drawImage(img, 0, 0);
+        mainTexture.needsUpdate = true;
+      }
+    };
+    img.src = savedBowl;
+  }
+  
+  // Initialize palette
+  const glazingPal = document.getElementById("glazingPalette");
+  if (glazingPal && glazingPal.children.length === 0) {
+    paletteColors.forEach(c => {
+      const s = document.createElement("div");
+      s.className = "pal-swatch";
+      s.style.background = c;
+      s.addEventListener("click", () => {
+        glazingBrushColor = c;
+      });
+      glazingPal.appendChild(s);
+    });
+  }
+  
+  // Setup controls
+  const glazingSizeRange = document.getElementById("glazingSizeRange");
+  const glazingSizeVal = document.getElementById("glazingSizeVal");
+  if (glazingSizeRange && glazingSizeVal) {
+    glazingSizeRange.addEventListener("input", e => {
+      glazingBrushSize = e.target.value;
+      glazingSizeVal.textContent = glazingBrushSize;
+    });
+  }
+  
+  const glazingColorWheel = document.getElementById("glazingColorWheel");
+  if (glazingColorWheel) {
+    glazingColorWheel.addEventListener("input", e => {
+      glazingBrushColor = e.target.value;
+    });
+  }
+  
+  // Setup tool buttons
+  document.getElementById("glazingBrushTool")?.addEventListener("click", () => {
+    glazingMode = "brush";
+    updateGlazingStatus("Brush tool selected - Paint on the 3D bowl");
+  });
+  
+  document.getElementById("glazingEraserTool")?.addEventListener("click", () => {
+    glazingMode = "eraser";
+    updateGlazingStatus("Eraser tool selected");
+  });
+  
+  document.getElementById("glazingClearBtn")?.addEventListener("click", () => {
+    clearBowlTexture();
+    updateGlazingStatus("Bowl cleared");
+  });
+  
+  document.getElementById("glazingSaveBtn")?.addEventListener("click", () => {
+    saveBowl();
+  });
+  
+  document.getElementById("glazingDownloadBtn")?.addEventListener("click", () => {
+    downloadFiredBowl();
+  });
+  
+  // 3D canvas painting handlers - paint on the bowl texture
+  glazingCanvas.addEventListener("mousedown", beginGlazing3D);
+  glazingCanvas.addEventListener("mousemove", continueGlazing3D);
+  glazingCanvas.addEventListener("mouseup", endGlazing3D);
+  glazingCanvas.addEventListener("touchstart", beginGlazing3D);
+  glazingCanvas.addEventListener("touchmove", continueGlazing3D);
+  glazingCanvas.addEventListener("touchend", endGlazing3D);
+  
+  // Start render loop
+  animateGlazing();
+  
+  // Window controls
+  document.getElementById("glazingMinBtn")?.addEventListener("click", () => {
+    const w = document.getElementById("glazingWindow");
+    if (w) w.style.display = (w.style.display === "none") ? "flex" : "none";
+  });
+  
+  document.getElementById("glazingMaxBtn")?.addEventListener("click", () => {
+    const w = document.getElementById("glazingWindow");
+    if (!w) return;
+    if (!w.classList.contains("max")) {
+      w.style.position = "fixed";
+      w.style.left = "12px";
+      w.style.top = "12px";
+      w.style.width = "calc(100vw - 24px)";
+      w.style.height = "calc(100vh - 24px)";
+      w.classList.add("max");
+    } else {
+      w.style.width = "880px";
+      w.style.height = "";
+      w.style.left = "";
+      w.style.top = "";
+      w.style.position = "";
+      w.classList.remove("max");
+    }
+  });
+  
+  document.getElementById("glazingCloseBtn")?.addEventListener("click", () => {
+    const glazingWindow = document.getElementById("glazingWindow");
+    if (glazingWindow) {
+      glazingWindow.style.display = "none";
+      glazingWindow.classList.add("hidden-init");
+    }
+  });
+  
+  // Make glazing window draggable
+  const glazingWin = document.getElementById("glazingWindow");
+  const glazingTitle = glazingWin?.querySelector(".titlebar");
+  let glazingDrag = false, glazingOff = {x: 0, y: 0};
+  
+  if (glazingTitle) {
+    glazingTitle.addEventListener("mousedown", (e) => {
+      if (e.target.closest(".tbtn")) return;
+      glazingDrag = true;
+      const r = glazingWin.getBoundingClientRect();
+      glazingOff.x = e.clientX - r.left;
+      glazingOff.y = e.clientY - r.top;
+      glazingWin.style.transition = "none";
+    });
+  }
+  
+  window.addEventListener("mousemove", (e) => {
+    if (!glazingDrag || !glazingWin) return;
+    glazingWin.style.left = (e.clientX - glazingOff.x) + "px";
+    glazingWin.style.top = (e.clientY - glazingOff.y) + "px";
+    glazingWin.style.position = "fixed";
+  });
+  
+  window.addEventListener("mouseup", () => {
+    glazingDrag = false;
+    if (glazingWin) glazingWin.style.transition = "box-shadow .2s";
+  });
+  
+  updateTableProgress();
+  updateGlazingStatus("Paint directly on the 3D bowl. Visit other tables to progress.");
+}
+
+// 3D Texture Painting Functions
+function paintOnBowlTexture(uv, color, size) {
+  if (!glazing3DBowl || !glazing3DBowl.userData.textureContext) return;
+  
+  const ctx = glazing3DBowl.userData.textureContext;
+  const canvas = glazing3DBowl.userData.textureCanvas;
+  const texture = glazing3DBowl.userData.texture;
+  
+  // Convert UV coordinates (0-1) to pixel coordinates
+  const x = uv.x * canvas.width;
+  const y = (1 - uv.y) * canvas.height; // Flip Y for canvas coordinate system
+  
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Update texture
+  texture.needsUpdate = true;
+  
+  // Also update main bowl texture if it exists
+  if (window.glazingBowl && window.glazingBowl.userData.texture) {
+    const mainCtx = window.glazingBowl.userData.textureContext;
+    const mainCanvas = window.glazingBowl.userData.textureCanvas;
+    const mainTexture = window.glazingBowl.userData.texture;
+    
+    mainCtx.fillStyle = color;
+    mainCtx.beginPath();
+    mainCtx.arc(uv.x * mainCanvas.width, (1 - uv.y) * mainCanvas.height, size / 2, 0, Math.PI * 2);
+    mainCtx.fill();
+    mainTexture.needsUpdate = true;
+  }
+}
+
+function eraseOnBowlTexture(uv, size) {
+  if (!glazing3DBowl || !glazing3DBowl.userData.textureContext) return;
+  
+  const ctx = glazing3DBowl.userData.textureContext;
+  const canvas = glazing3DBowl.userData.textureCanvas;
+  const texture = glazing3DBowl.userData.texture;
+  
+  const x = uv.x * canvas.width;
+  const y = (1 - uv.y) * canvas.height;
+  
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath();
+  ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+  
+  texture.needsUpdate = true;
+  
+  // Also update main bowl
+  if (window.glazingBowl && window.glazingBowl.userData.texture) {
+    const mainCtx = window.glazingBowl.userData.textureContext;
+    const mainCanvas = window.glazingBowl.userData.textureCanvas;
+    const mainTexture = window.glazingBowl.userData.texture;
+    
+    mainCtx.globalCompositeOperation = 'destination-out';
+    mainCtx.beginPath();
+    mainCtx.arc(uv.x * mainCanvas.width, (1 - uv.y) * mainCanvas.height, size / 2, 0, Math.PI * 2);
+    mainCtx.fill();
+    mainCtx.globalCompositeOperation = 'source-over';
+    mainTexture.needsUpdate = true;
+  }
+}
+
+function getUVFromMouse(event, canvas) {
+  const rect = canvas.getBoundingClientRect();
+  const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+  const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+  
+  glazingPointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  glazingPointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+  
+  glazingRaycaster.setFromCamera(glazingPointer, glazing3DCamera);
+  const intersects = glazingRaycaster.intersectObject(glazing3DBowl);
+  
+  if (intersects.length > 0) {
+    return intersects[0].uv;
+  }
+  return null;
+}
+
+function beginGlazing3D(e) {
+  if (glazingPainting) return;
+  const uv = getUVFromMouse(e, glazing3DRenderer.domElement);
+  if (!uv) return;
+  
+  glazingPainting = true;
+  if (glazingMode === "eraser") {
+    eraseOnBowlTexture(uv, glazingBrushSize);
+  } else {
+    paintOnBowlTexture(uv, glazingBrushColor, glazingBrushSize);
+  }
+}
+
+function continueGlazing3D(e) {
+  if (!glazingPainting) return;
+  e.preventDefault();
+  const uv = getUVFromMouse(e, glazing3DRenderer.domElement);
+  if (!uv) return;
+  
+  if (glazingMode === "eraser") {
+    eraseOnBowlTexture(uv, glazingBrushSize);
+  } else {
+    paintOnBowlTexture(uv, glazingBrushColor, glazingBrushSize);
+  }
+}
+
+function endGlazing3D() {
+  glazingPainting = false;
+}
+
+function animateGlazing() {
+  if (!glazing3DRenderer || !glazing3DScene || !glazing3DCamera) return;
+  
+  // Rotate the bowl slowly to show it's 3D
+  if (glazing3DBowl) {
+    glazing3DBowl.rotation.y += 0.005; // Slow rotation
+  }
+  
+  requestAnimationFrame(animateGlazing);
+  glazing3DRenderer.render(glazing3DScene, glazing3DCamera);
+}
+
+function clearBowlTexture() {
+  if (!glazing3DBowl || !glazing3DBowl.userData.textureContext) return;
+  
+  const ctx = glazing3DBowl.userData.textureContext;
+  const canvas = glazing3DBowl.userData.textureCanvas;
+  const texture = glazing3DBowl.userData.texture;
+  
+  ctx.fillStyle = '#e8d5b7';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  texture.needsUpdate = true;
+  
+  // Also clear main bowl
+  if (window.glazingBowl && window.glazingBowl.userData.texture) {
+    const mainCtx = window.glazingBowl.userData.textureContext;
+    const mainCanvas = window.glazingBowl.userData.textureCanvas;
+    const mainTexture = window.glazingBowl.userData.texture;
+    
+    mainCtx.fillStyle = '#e8d5b7';
+    mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+    mainTexture.needsUpdate = true;
+  }
+}
+
+function updateGlazingStatus(message) {
+  const status = document.getElementById("glazingStatus");
+  if (status) {
+    status.textContent = message;
+  }
+}
+
+async function saveBowl() {
+  if (!glazing3DBowl || !glazing3DBowl.userData.textureCanvas) {
+    updateGlazingStatus("Error: Bowl texture not found");
+    return;
+  }
+  
+  const statusbar = document.getElementById("glazingStatus");
+  const saveBtn = document.getElementById("glazingSaveBtn");
+  
+  // Update status
+  if (statusbar) statusbar.textContent = 'Saving bowl...';
+  if (saveBtn) saveBtn.disabled = true;
+  
+  // Get the bowl texture as image data
+  const textureData = glazing3DBowl.userData.textureCanvas.toDataURL('image/png');
+  const name = prompt('Name your bowl:');
+  
+  if (!name) {
+    if (statusbar) statusbar.textContent = 'Ready';
+    if (saveBtn) saveBtn.disabled = false;
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/paintings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageData: textureData, name, type: 'bowl' })
+    });
+    
+    if (!response.ok) {
+      let errorData;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { message: `Server error: ${response.status}` };
+        }
+      } else {
+        const text = await response.text();
+        errorData = { 
+          message: text.includes('MongoDB') || text.includes('Database') 
+            ? 'Database not configured. Please set MONGODB_URI in Vercel environment variables.'
+            : `Server error: ${response.status}`
+        };
+      }
+      throw new Error(errorData.message || errorData.error || `Server error: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    if (statusbar) statusbar.textContent = 'Bowl saved!';
+    alert('Bowl saved successfully!');
+    
+    // Reload gallery after saving
+    loadGallery();
+    
+    // Reset status after 2 seconds
+    setTimeout(() => {
+      if (statusbar) statusbar.textContent = 'Ready';
+    }, 2000);
+  } catch (error) {
+    console.error('Error saving bowl:', error);
+    if (statusbar) statusbar.textContent = 'Error: ' + error.message;
+    alert('Error saving: ' + error.message);
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
+  }
+}
+
+async function downloadFiredBowl() {
+  if (!glazing3DBowl || !glazing3DBowl.userData.textureCanvas) {
+    updateGlazingStatus("Error: Bowl not found");
+    return;
+  }
+  
+  // Check if gif.js is available
+  if (typeof GIF === 'undefined') {
+    updateGlazingStatus("Error: GIF library not loaded. Please refresh the page.");
+    alert("GIF library not available. Please refresh the page.");
+    return;
+  }
+  
+  updateGlazingStatus("Creating animated GIF... This may take a moment.");
+  
+  try {
+    // Create a temporary canvas for rendering the 3D bowl at different angles
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = 512;
+    tempCanvas.height = 512;
+    
+    // Create a temporary 3D scene for rendering
+    const tempRenderer = new THREE.WebGLRenderer({ canvas: tempCanvas, antialias: true, alpha: true });
+    tempRenderer.setSize(512, 512);
+    const tempScene = new THREE.Scene();
+    tempScene.background = null;
+    
+    // Create camera
+    const tempCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
+    tempCamera.position.set(4, 3, 5);
+    tempCamera.lookAt(0, 0, 0);
+    
+    // Clone the bowl for animation
+    const bowlGeometry = glazing3DBowl.geometry.clone();
+    const bowlMaterial = glazing3DBowl.material.clone();
+    const tempBowl = new THREE.Mesh(bowlGeometry, bowlMaterial);
+    tempScene.add(tempBowl);
+    
+    // Add lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    tempScene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    directionalLight.position.set(5, 5, 5);
+    tempScene.add(directionalLight);
+    
+    // Initialize GIF encoder - use worker from CDN
+    const gif = new GIF({
+      workers: 2,
+      quality: 10,
+      width: 512,
+      height: 512,
+      workerScript: 'https://unpkg.com/gif.js@0.2.0/dist/gif.worker.js'
+    });
+    
+    // Render bowl at different rotation angles to create animation
+    const numFrames = 24; // 24 frames for smooth rotation
+    const rotationStep = (Math.PI * 2) / numFrames;
+    
+    // Render all frames first
+    const frames = [];
+    for (let i = 0; i < numFrames; i++) {
+      tempBowl.rotation.y = i * rotationStep;
+      tempRenderer.render(tempScene, tempCamera);
+      
+      // Get canvas data for this frame
+      const frameCanvas = document.createElement('canvas');
+      frameCanvas.width = 512;
+      frameCanvas.height = 512;
+      const frameCtx = frameCanvas.getContext('2d');
+      frameCtx.drawImage(tempCanvas, 0, 0);
+      frames.push(frameCanvas);
+    }
+    
+    // Add frames to GIF
+    frames.forEach(frame => {
+      gif.addFrame(frame, { delay: 200 }); // 200ms delay between frames
+    });
+    
+    // Render the GIF
+    gif.on('finished', function(blob) {
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "fired-bowl-animated.gif";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up
+      URL.revokeObjectURL(url);
+      tempRenderer.dispose();
+      tempBowl.geometry.dispose();
+      tempBowl.material.dispose();
+      
+      updateGlazingStatus("Animated GIF downloaded! Enjoy your rotating bowl.");
+      
+      // Reset status after 3 seconds
+      setTimeout(() => {
+        updateGlazingStatus("Ready");
+      }, 3000);
+    });
+    
+    gif.render();
+  } catch (error) {
+    console.error('Error creating GIF:', error);
+    updateGlazingStatus("Error creating GIF: " + error.message);
+    alert("Error creating GIF. Please try again.");
+  }
+}
+
+// Function to update table progress overlay (called from script2.js)
+function updateTableProgress() {
+  const progressBar = document.getElementById("tableProgressBar");
+  const progressText = document.getElementById("tableProgressText");
+  const downloadBtn = document.getElementById("glazingDownloadBtn");
+  
+  if (!progressBar || !progressText) return;
+  
+  const visited = window.tablesVisited || 0;
+  const total = window.TOTAL_TABLES || 2;
+  const percent = (visited / total) * 100;
+  
+  progressBar.style.width = percent + "%";
+  progressText.textContent = `${visited} / ${total} tables visited`;
+  
+  // Show download button only if all tables visited, hide otherwise
+  if (downloadBtn) {
+    if (visited >= total) {
+      downloadBtn.style.display = "block";
+    } else {
+      downloadBtn.style.display = "none";
+    }
+  }
+}
+
+// Expose functions globally
+window.initializeGlazing = initializeGlazing;
+window.updateTableProgress = updateTableProgress;
 });

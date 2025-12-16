@@ -3,17 +3,22 @@
   const THREE = window.THREE;
   if (!THREE) return;
 
-  // Create debug overlay
-  const debugOverlay = document.createElement('div');
-  debugOverlay.id = 'debugOverlay';
-  debugOverlay.style.cssText = 'position:fixed;top:10px;left:10px;background:rgba(0,0,0,0.7);color:#0f0;font-family:monospace;font-size:12px;padding:10px;z-index:999;border:1px solid #0f0';
-  document.body.appendChild(debugOverlay);
 
   // Constants
   // Increase SPEED to compensate for the larger environment so movement doesn't feel slow
-  const ROOM = { W: 20, H: 6, D: 20, EYE_HEIGHT: 3.0, SPEED: 9 };
-  const PLAYER = { SIZE: new THREE.Vector3(0.6, 1.7, 0.6), RADIUS: 0.3 };
+  const ROOM = { W: 20, H: 6, D: 20, EYE_HEIGHT: 3.5, SPEED: 15 };
+  const PLAYER = { SIZE: new THREE.Vector3(0.5, 1.7, 0.5), RADIUS: 0.3 };
   const SENSITIVITY = 0.002;
+  
+  // World boundaries - limit the playable area
+  const WORLD_BOUNDS = {
+    minX: -100,
+    maxX: 100,
+    minZ: -100,
+    maxZ: 100,
+    minY: -10,
+    maxY: 50
+  };
 
   // Canvas & Renderer
   const canvas = document.getElementById("canvas");
@@ -24,6 +29,8 @@
   // Scene & Camera
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x87CEEB); // Sky blue background
+  // Add fog for better visual polish and to hide distant areas
+  scene.fog = new THREE.Fog(0x87CEEB, 80, 150);
   const camera = new THREE.PerspectiveCamera(50, 2, 0.1, 500);
   scene.add(camera);
 
@@ -31,26 +38,39 @@
   let yaw = 0, pitch = 0;
 
   // Soft warm lighting
-  const hemisphereLight = new THREE.HemisphereLight(0xfff5e6, 0xffe0b3, 0.4); // Warm top, warmer bottom
+  const hemisphereLight = new THREE.HemisphereLight(0xfff5e6, 0xffe0b3, 0.5); // Warm top, warmer bottom
   scene.add(hemisphereLight);
   
-  const dir = new THREE.DirectionalLight(0xffe5cc, 0.25); // Soft warm directional light
+  const dir = new THREE.DirectionalLight(0xffe5cc, 0.3); // Soft warm directional light
   dir.position.set(20, 30, 20);
   dir.castShadow = true;
   dir.shadow.mapSize.width = 2048;
   dir.shadow.mapSize.height = 2048;
+  dir.shadow.camera.near = 0.1;
+  dir.shadow.camera.far = 200;
+  dir.shadow.camera.left = -100;
+  dir.shadow.camera.right = 100;
+  dir.shadow.camera.top = 100;
+  dir.shadow.camera.bottom = -100;
   scene.add(dir);
   
   // Additional soft ambient light
-  scene.add(new THREE.AmbientLight(0xfff5e6, 0.6)); // Warm ambient
+  scene.add(new THREE.AmbientLight(0xfff5e6, 0.65)); // Warm ambient
   
   // Store collider visuals for later cleanup if needed
   const colliderVisuals = [];
 
   let model;
-  let meshColliders = [];
+  let meshColliders = []; // Store actual mesh objects for precise collision
   let claytable;
+  let glazingBowl; // Placeholder bowl for glazing
   let roomCenter = new THREE.Vector3(0, 0, 0);
+  
+  // Table visit tracking - 2 tables: bowl glazing and claytable soup painting
+  const TOTAL_TABLES = 2;
+  let tablesVisited = 0;
+  window.tablesVisited = 0; // Make globally accessible
+  window.TOTAL_TABLES = TOTAL_TABLES;
 
   try {
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
@@ -93,12 +113,11 @@
           }
         }
         // Check if this is a collision mesh (name contains "coll_")
-        if (m.name.toLowerCase().includes('coll_')) {
-          // Update this mesh's matrix world to get correct world space bounds
-          m.updateMatrixWorld(true);
-          const box = new THREE.Box3().setFromObject(m);
-          meshColliders.push(box);
-          console.log('Found collision mesh:', m.name, 'bounds:', box.min, 'to', box.max);
+        // Store the actual mesh object for precise geometry-based collision
+        const meshName = m.name.toLowerCase();
+        if (meshName.includes('coll_')) {
+          meshColliders.push(m); // Store the actual mesh, not just bounding box
+          console.log('Found collision mesh:', m.name);
         }
       }
     });
@@ -149,24 +168,52 @@
       console.log('Using', meshColliders.length, 'collision meshes from Blender');
     }
 
-    // Create visual outlines for all colliders
-    meshColliders.forEach((box, index) => {
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      const center = new THREE.Vector3();
-      box.getCenter(center);
-      
-      const geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
-      const edges = new THREE.EdgesGeometry(geometry);
-      const line = new THREE.LineSegments(
-        edges,
-        new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 })
-      );
-      line.position.copy(center);
-      scene.add(line);
-      colliderVisuals.push(line);
-      console.log(`Created collider visual ${index} at`, center, 'size', size);
+    // Collider visuals removed
+
+    // Add world boundary collision boxes to limit player movement
+    const boundaryThickness = 2;
+    // North wall (positive Z)
+    meshColliders.push(new THREE.Box3(
+      new THREE.Vector3(WORLD_BOUNDS.minX, WORLD_BOUNDS.minY, WORLD_BOUNDS.maxZ - boundaryThickness),
+      new THREE.Vector3(WORLD_BOUNDS.maxX, WORLD_BOUNDS.maxY, WORLD_BOUNDS.maxZ + boundaryThickness)
+    ));
+    // South wall (negative Z)
+    meshColliders.push(new THREE.Box3(
+      new THREE.Vector3(WORLD_BOUNDS.minX, WORLD_BOUNDS.minY, WORLD_BOUNDS.minZ - boundaryThickness),
+      new THREE.Vector3(WORLD_BOUNDS.maxX, WORLD_BOUNDS.maxY, WORLD_BOUNDS.minZ + boundaryThickness)
+    ));
+    // East wall (positive X)
+    meshColliders.push(new THREE.Box3(
+      new THREE.Vector3(WORLD_BOUNDS.maxX - boundaryThickness, WORLD_BOUNDS.minY, WORLD_BOUNDS.minZ),
+      new THREE.Vector3(WORLD_BOUNDS.maxX + boundaryThickness, WORLD_BOUNDS.maxY, WORLD_BOUNDS.maxZ)
+    ));
+    // West wall (negative X)
+    meshColliders.push(new THREE.Box3(
+      new THREE.Vector3(WORLD_BOUNDS.minX - boundaryThickness, WORLD_BOUNDS.minY, WORLD_BOUNDS.minZ),
+      new THREE.Vector3(WORLD_BOUNDS.minX + boundaryThickness, WORLD_BOUNDS.maxY, WORLD_BOUNDS.maxZ)
+    ));
+    console.log('Added world boundary collision boxes');
+
+    // Calculate room's bounding box to find floor level and center position
+    const roomBox = new THREE.Box3().setFromObject(model);
+    const roomMinY = roomBox.min.y;
+    const roomCenter = new THREE.Vector3();
+    roomBox.getCenter(roomCenter);
+    
+    // Add a floor plane (smaller than world boundaries for better feel)
+    const floorSize = 120; // Smaller floor size
+    const floorGeometry = new THREE.PlaneGeometry(floorSize, floorSize);
+    const floorMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0xf5f5f5, // Light gray floor
+      roughness: 0.8,
+      metalness: 0.1
     });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2; // Rotate to be horizontal
+    floor.position.set(roomCenter.x, roomMinY, roomCenter.z); // Position at room's center X/Z and bottom Y
+    floor.receiveShadow = true;
+    scene.add(floor);
+    console.log('Added floor plane at room center:', roomCenter, 'floor level:', roomMinY);
   } catch (err) {
     console.error('Failed to load classroom.glb, using fallback box');
     model = new THREE.Mesh(
@@ -178,21 +225,6 @@
     scene.add(model);
     const box = new THREE.Box3().setFromObject(model);
     meshColliders.push(box);
-    
-    // Create visual outline for fallback collider
-    const size = new THREE.Vector3();
-    box.getSize(size);
-    const center = new THREE.Vector3();
-    box.getCenter(center);
-    const geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
-    const edges = new THREE.EdgesGeometry(geometry);
-    const line = new THREE.LineSegments(
-      edges,
-      new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 })
-    );
-    line.position.copy(center);
-    scene.add(line);
-    colliderVisuals.push(line);
   }
 
   // Load claytable
@@ -207,10 +239,12 @@
       )
     );
     claytable = claytableGltf.scene;
-    // Reposition table: down (lower Y), forward (further -Z), and left (negative X)
-    claytable.position.set(21,-2,-35);
-    // Even larger table scale
-    claytable.scale.setScalar(0.6);
+    claytable.position.set(81, -2.5, -30);
+    claytable.scale.setScalar(0.8);
+    
+    // Update world matrix for collision detection
+    claytable.updateMatrixWorld(true);
+    
     claytable.traverse(m => {
       if (m.isMesh) {
         m.castShadow = true;
@@ -222,6 +256,11 @@
       }
     });
     scene.add(claytable);
+    
+    // Add claytable to collision system
+    meshColliders.push(claytable);
+    console.log('Added claytable to collision system');
+        
   } catch (err) {
     console.error('Failed to load claytable.glb');
     claytable = new THREE.Mesh(
@@ -232,6 +271,65 @@
     // Larger fallback table
     claytable.scale.setScalar(0.3);
     scene.add(claytable);
+    
+    // Add fallback claytable to collision system
+    meshColliders.push(claytable);
+    console.log('Added fallback claytable to collision system');
+  }
+
+  // Add placeholder glazing bowl on top of claytable (will be replaced with GLB later)
+  try {
+    // Get claytable position to place bowl on top
+    const tableBox = new THREE.Box3().setFromObject(claytable);
+    const tableTop = tableBox.max.y;
+    const tableCenter = new THREE.Vector3();
+    tableBox.getCenter(tableCenter);
+    
+    // Create a taller, perfectly circular bowl shape with proper UV mapping for texture
+    const bowlRadius = 0.8;
+    const bowlHeight = 1.0; // Made taller
+    const bowlGeometry = new THREE.CylinderGeometry(bowlRadius, bowlRadius, bowlHeight, 32, 1, true); // Perfectly circular (same radius top and bottom)
+    
+    // Create a canvas texture for painting on the bowl
+    const textureSize = 512;
+    const bowlTextureCanvas = document.createElement('canvas');
+    bowlTextureCanvas.width = textureSize;
+    bowlTextureCanvas.height = textureSize;
+    const bowlTextureCtx = bowlTextureCanvas.getContext('2d');
+    // Fill with base clay color
+    bowlTextureCtx.fillStyle = '#e8d5b7';
+    bowlTextureCtx.fillRect(0, 0, textureSize, textureSize);
+    
+    const bowlTexture = new THREE.CanvasTexture(bowlTextureCanvas);
+    bowlTexture.needsUpdate = true;
+    
+    // Make bowl shinier (lower roughness, higher metalness)
+    const bowlMaterial = new THREE.MeshStandardMaterial({ 
+      map: bowlTexture,
+      roughness: 0.3, // Lower = shinier (was 0.8)
+      metalness: 0.4  // Higher = more metallic/shiny (was 0.1)
+    });
+    
+    glazingBowl = new THREE.Mesh(bowlGeometry, bowlMaterial);
+    // Position bowl on top of claytable, centered
+    glazingBowl.position.set(tableCenter.x, tableTop + bowlHeight / 2 + 0.1, tableCenter.z);
+    glazingBowl.castShadow = true;
+    glazingBowl.receiveShadow = true;
+    
+    // Store texture canvas and context for painting
+    glazingBowl.userData.textureCanvas = bowlTextureCanvas;
+    glazingBowl.userData.textureContext = bowlTextureCtx;
+    glazingBowl.userData.texture = bowlTexture;
+    
+    scene.add(glazingBowl);
+    
+    // Make bowl globally accessible for glazing system
+    window.glazingBowl = glazingBowl;
+    
+    // Don't add to collision - bowl should be clickable/interactable
+    console.log('Added glazing bowl on top of claytable');
+  } catch (err) {
+    console.error('Failed to create glazing bowl:', err);
   }
 
   // Input
@@ -240,9 +338,44 @@
   const keys = {};
   let isDown = false;
   let lastX = 0, lastY = 0;
+  let controlsEnabled = false; // Controls disabled until user clicks start
 
-  const player = new THREE.Vector3(0, ROOM.EYE_HEIGHT, 0);
+  // Start player at origin, within world boundaries
+  const player = new THREE.Vector3(70, ROOM.EYE_HEIGHT, 10);
   const playerBox = new THREE.Box3();
+
+  // Setup intro overlay
+  const introOverlay = document.getElementById('introOverlay');
+  const startButton = document.getElementById('startButton');
+  
+  // Show overlay after scene has loaded and rendered
+  const showIntroOverlay = () => {
+    if (introOverlay) {
+      introOverlay.classList.add('visible');
+    }
+  };
+  
+  const enableControls = () => {
+    controlsEnabled = true;
+    if (introOverlay) {
+      introOverlay.classList.remove('visible');
+      introOverlay.classList.add('hidden');
+    }
+    // Keep cursor visible (no pointer lock) so it can be customized later
+  };
+
+  if (startButton) {
+    startButton.addEventListener('click', enableControls);
+  }
+  
+  // Also allow clicking anywhere on overlay to start
+  if (introOverlay) {
+    introOverlay.addEventListener('click', (e) => {
+      if (e.target === introOverlay) {
+        enableControls();
+      }
+    });
+  }
 
   document.addEventListener("keydown", e => {
     keys[e.key.toLowerCase()] = true;
@@ -254,6 +387,11 @@
   }, true);
 
   canvas.addEventListener("click", e => {
+    if (!controlsEnabled) {
+      enableControls();
+      return;
+    }
+    
     const r = canvas.getBoundingClientRect();
     pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
     pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1;
@@ -264,12 +402,46 @@
       const intersects = raycaster.intersectObject(claytable, true);
       console.log('Claytable click test:', intersects.length > 0);
       if (intersects.length) {
+        // Mark claytable as visited
+        if (!window.claytableVisited) {
+          window.claytableVisited = true;
+          window.tablesVisited = (window.tablesVisited || 0) + 1;
+          if (typeof window.updateTableProgress === 'function') {
+            window.updateTableProgress();
+          }
+        }
+        
         const w = document.getElementById("paintWindow");
         console.log('Paint window element:', w);
         if (w) {
           w.style.display = "flex";
           w.classList.remove("hidden-init");
           setTimeout(() => window.initializeCanvas?.(), 10);
+        }
+      }
+    }
+    
+    // Check if clicking on glazing bowl
+    if (glazingBowl) {
+      const intersects = raycaster.intersectObject(glazingBowl, true);
+      if (intersects.length) {
+        // Mark bowl table as visited
+        if (!window.bowlTableVisited) {
+          window.bowlTableVisited = true;
+          window.tablesVisited = (window.tablesVisited || 0) + 1;
+          if (typeof window.updateTableProgress === 'function') {
+            window.updateTableProgress();
+          }
+        }
+        
+        const glazingWindow = document.getElementById("glazingWindow");
+        if (glazingWindow) {
+          glazingWindow.style.display = "flex";
+          glazingWindow.classList.remove("hidden-init");
+          // Initialize glazing system if needed
+          if (typeof window.initializeGlazing === 'function') {
+            setTimeout(() => window.initializeGlazing(), 10);
+          }
         }
       }
     }
@@ -283,16 +455,73 @@
     playerBox.max.set(pos.x + PLAYER.RADIUS, ROOM.EYE_HEIGHT * 2, pos.z + PLAYER.RADIUS);
   };
 
+  // Helper to check collision between player box and mesh geometry
+  const checkMeshCollision = (playerBox, mesh) => {
+    // Update mesh world matrix to ensure transforms are current
+    mesh.updateMatrixWorld(true);
+    
+    // First do a quick bounding box check for early rejection
+    const meshBox = new THREE.Box3().setFromObject(mesh);
+    if (!playerBox.intersectsBox(meshBox)) {
+      return false;
+    }
+
+    // Get player box center and dimensions
+    const center = new THREE.Vector3();
+    playerBox.getCenter(center);
+    const boxSize = new THREE.Vector3();
+    playerBox.getSize(boxSize);
+    const playerRadius = Math.max(boxSize.x, boxSize.z) * 0.5;
+    
+    // Cast rays from player center in movement-relevant directions
+    // This checks if the mesh surface is very close to the player
+    const raycaster = new THREE.Raycaster();
+    raycaster.far = playerRadius * 2; // Check up to player diameter
+    
+    // Cast in 8 horizontal directions (for walls) and 2 vertical (floor/ceiling)
+    const directions = [
+      new THREE.Vector3(1, 0, 0),   // +X
+      new THREE.Vector3(-1, 0, 0),  // -X
+      new THREE.Vector3(0, 0, 1),   // +Z
+      new THREE.Vector3(0, 0, -1),  // -Z
+      new THREE.Vector3(0.707, 0, 0.707),   // Diagonal
+      new THREE.Vector3(-0.707, 0, 0.707),  // Diagonal
+      new THREE.Vector3(0.707, 0, -0.707),  // Diagonal
+      new THREE.Vector3(-0.707, 0, -0.707), // Diagonal
+      new THREE.Vector3(0, 1, 0),   // +Y (ceiling)
+      new THREE.Vector3(0, -1, 0),  // -Y (floor)
+    ];
+
+    for (const dir of directions) {
+      raycaster.set(center, dir);
+      const intersects = raycaster.intersectObject(mesh, true);
+      // If we hit the mesh within player radius, we're colliding
+      if (intersects.length > 0 && intersects[0].distance <= playerRadius) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
   canvas.addEventListener("pointerdown", e => {
+    if (!controlsEnabled) {
+      enableControls();
+      return;
+    }
     isDown = true;
     lastX = e.clientX;
     lastY = e.clientY;
   });
 
-  canvas.addEventListener("pointerup", () => (isDown = false));
+  canvas.addEventListener("pointerup", () => {
+    if (controlsEnabled) {
+      isDown = false;
+    }
+  });
 
   canvas.addEventListener("pointermove", e => {
-    if (!isDown) return;
+    if (!controlsEnabled || !isDown) return;
     yaw -= (e.clientX - lastX) * SENSITIVITY;
     pitch -= (e.clientY - lastY) * SENSITIVITY;
     pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
@@ -313,12 +542,19 @@
 
   // Animation loop
   let prev = performance.now();
+  let overlayShown = false;
   const animate = t => {
     const dt = Math.min(0.05, (t - prev) / 1000);
     prev = t;
-
-    // Update debug overlay
-    debugOverlay.innerHTML = `w:${keys['w']?1:0} a:${keys['a']?1:0} s:${keys['s']?1:0} d:${keys['d']?1:0}<br>pos:${player.x.toFixed(1)},${player.z.toFixed(1)}<br>cam:${camera.position.x.toFixed(1)},${camera.position.y.toFixed(1)},${camera.position.z.toFixed(1)}<br>colliders:${meshColliders.length}`;
+    
+    // Show overlay after first frame renders (scene is ready)
+    if (!overlayShown && introOverlay) {
+      overlayShown = true;
+      // Small delay to ensure scene has rendered
+      setTimeout(() => {
+        showIntroOverlay();
+      }, 100);
+    }
 
     if (document.getElementById("paintWindow")?.style.display === "flex") {
       renderer.render(scene, camera);
@@ -336,7 +572,7 @@
     if (keys.ArrowRight) yaw -= 1.8 * dt;
     pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
 
-    if (forward || strafe) {
+    if (controlsEnabled && (forward || strafe)) {
       const sin = Math.sin(yaw), cos = Math.cos(yaw);
       const dx = (sin * -forward + cos * strafe) * ROOM.SPEED * dt;
       const dz = (cos * -forward - sin * strafe) * ROOM.SPEED * dt;
@@ -345,12 +581,33 @@
       next.x += dx;
       next.z += dz;
 
-      // Collision check against coll_* meshes from Blender
+      // Collision check against coll_* meshes using actual mesh geometry
       updatePlayerBox(next);
-      const hit = meshColliders.some(box => box.intersectsBox(playerBox));
+      let hit = false;
+      for (const collider of meshColliders) {
+        // Handle Box3 objects (for fallback boundaries)
+        if (collider instanceof THREE.Box3) {
+          if (collider.intersectsBox(playerBox)) {
+            hit = true;
+            break;
+          }
+        } 
+        // Handle mesh objects, Groups (like GLTF scenes), and other Object3D types
+        else if (collider instanceof THREE.Object3D) {
+          if (checkMeshCollision(playerBox, collider)) {
+            hit = true;
+            break;
+          }
+        }
+      }
       if (!hit) {
         player.copy(next);
       }
+      
+      // Safety clamp to ensure player stays within world boundaries
+      player.x = Math.max(WORLD_BOUNDS.minX + PLAYER.RADIUS, Math.min(WORLD_BOUNDS.maxX - PLAYER.RADIUS, player.x));
+      player.z = Math.max(WORLD_BOUNDS.minZ + PLAYER.RADIUS, Math.min(WORLD_BOUNDS.maxZ - PLAYER.RADIUS, player.z));
+      player.y = Math.max(WORLD_BOUNDS.minY + PLAYER.RADIUS, Math.min(WORLD_BOUNDS.maxY - PLAYER.RADIUS, player.y));
     }
 
     camera.position.set(player.x, ROOM.EYE_HEIGHT, player.z);
@@ -362,5 +619,10 @@
     requestAnimationFrame(animate);
   };
 
+  // Initialize table progress overlay
+  if (typeof window.updateTableProgress === 'function') {
+    window.updateTableProgress();
+  }
+  
   requestAnimationFrame(animate);
 })();

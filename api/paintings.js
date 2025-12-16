@@ -70,7 +70,7 @@ export default async function handler(req, res) {
           });
         }
         
-        const { imageData, name } = body;
+        const { imageData, name, type } = body; // type can be 'painting' or 'bowl'
         
         if (!imageData || !name) {
           return sendJson(res, 400, { 
@@ -82,6 +82,7 @@ export default async function handler(req, res) {
         const result = await db.collection('paintings').insertOne({
           imageData,
           name,
+          type: type || 'painting', // Default to 'painting' for backward compatibility
           createdAt: new Date()
         });
         return sendJson(res, 201, { id: result.insertedId });
