@@ -451,15 +451,15 @@ input[type=range] {
 }
 
 .intro-content {
-  text-align: left;
+  text-align: center;
   color: #000;
   padding: 0;
   width: 700px;
-  background: #b4e197;
-  border: 2px outset #b4e197;
+  background: #8b7355;
+  border: 2px outset #8b7355;
   box-shadow: 
-    inset -2px -2px 0 #8b9d6f,
-    inset 2px 2px 0 #ffffff;
+    inset -2px -2px 0 #5d4037,
+    inset 2px 2px 0 #d4c5b0;
   font-family: Georgia, serif;
   font-size: 50px;
   image-rendering: pixelated;
@@ -472,7 +472,7 @@ input[type=range] {
 .intro-content::before {
   content: "we are in a soup";
   display: block;
-  background: linear-gradient(to bottom, #5a6f3a 0%, #7a8f4a 100%);
+  background: linear-gradient(to bottom, #556b2f 0%, #6b8e23 100%);
   color: #ffffff;
   padding: 3px 4px 3px 20px;
   font-size: 11px;
@@ -490,23 +490,24 @@ input[type=range] {
   left: 2px;
   width: 16px;
   height: 14px;
-  background: #b4e197;
-  border: 1px outset #b4e197;
+  background: #8b7355;
+  border: 1px outset #8b7355;
   z-index: 1;
 }
 
 .intro-inner {
   padding: 20px 24px 24px 24px;
-  background: #d4e5b8;
+  background: #a0896b;
   margin: 2px;
-  border: 1px inset #8b9d6f;
+  border: 1px inset #5d4037;
+  text-align: center;
 }
 
 .intro-content h1 {
-  font-size: 32px;
-  margin: 0 0 12px 0;
-  font-weight: 300;
-  color: #391d01;
+  font-size: 48px;
+  margin: 0 0 16px 0;
+  font-weight: 700;
+  color: #f5f5f5;
   font-family: Georgia, serif;
   text-transform: none;
   letter-spacing: 0;
@@ -514,31 +515,34 @@ input[type=range] {
 }
 
 .intro-tagline {
-  font-size: 14px;
-  color: #391d01;
-  margin-bottom: 16px;
-  border-bottom: 1px solid #b4e197;
-  padding-bottom: 8px;
+  font-size: 18px;
+  color: #f5f5f5;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #6b7355;
+  padding-bottom: 12px;
   font-family: Georgia, serif;
   font-style: italic;
+  font-weight: 600;
 }
 
 .intro-instructions {
   margin: 16px 0 20px 0;
-  line-height: 1.6;
-  font-size: 13px;
+  line-height: 1.8;
+  font-size: 15px;
   font-family: Georgia, serif;
-  color: #391d01;
+  color: #f5f5f5;
+  text-align: center;
 }
 
 .intro-instructions p {
-  margin: 8px 0;
-  color: #391d01;
+  margin: 10px 0;
+  color: #f5f5f5;
   font-style: italic;
+  font-weight: 600;
 }
 
 .intro-instructions strong {
-  color: #391d01;
+  color: #f5f5f5;
   font-weight: bold;
 }
 
@@ -547,9 +551,9 @@ input[type=range] {
   padding: 10px 32px;
   font-size: 13px;
   font-weight: bold;
-  background: #b4e197;
-  color: #391d01;
-  border: 2px outset #b4e197;
+  background: #8b7355;
+  color: #f5f5f5;
+  border: 2px outset #8b7355;
   cursor: pointer;
   font-family: Georgia, serif;
   display: block;
@@ -558,19 +562,19 @@ input[type=range] {
   text-transform: none;
   letter-spacing: 0;
   box-shadow: 
-    inset -2px -2px 0 #8b9d6f,
-    inset 2px 2px 0 #ffffff;
+    inset -2px -2px 0 #5d4037,
+    inset 2px 2px 0 #d4c5b0;
 }
 
 .start-button:hover {
-  background: #c5d6a8;
+  background: #9b8365;
 }
 
 .start-button:active {
-  border: 2px inset #b4e197;
+  border: 2px inset #8b7355;
   box-shadow: 
-    inset 2px 2px 0 #8b9d6f,
-    inset -2px -2px 0 #ffffff;
+    inset 2px 2px 0 #5d4037,
+    inset -2px -2px 0 #d4c5b0;
 }
 
 /* Table Visit Progress Overlay - Always visible on screen */
