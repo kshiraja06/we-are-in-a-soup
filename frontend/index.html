@@ -167,30 +167,30 @@
 
   <!-- Worry Box Window -->
   <div id="worryWindow" class="win worry-window hidden-init" style="position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 600px;">
-    <div class="titlebar">
-      <span style="flex: 1;">worry box 📝</span>
+    <div class="titlebar" style="background: #fffacd; border-bottom: 1px solid #ddd;">
+      <span style="flex: 1; font-family: 'Comic Sans MS', cursive; font-weight: bold;">worry box 📝</span>
       <button class="tbtn" id="worryMinBtn" title="Minimize">_</button>
       <button class="tbtn" id="worryMaxBtn" title="Maximize">□</button>
       <button class="tbtn" id="worryCloseBtn" title="Close">✕</button>
     </div>
     <div class="worry-content">
       <div id="worryInputPanel" class="worry-panel">
-        <div style="font-size: 13px; color: #333; margin-bottom: 12px;">what's weighing on you?</div>
-        <textarea id="worryInput" placeholder="type your worry... (anonymous)" style="width: 100%; height: 150px; padding: 8px; border: 1px solid #999; border-radius: 4px; font-family: Arial, sans-serif; font-size: 12px; resize: none;"></textarea>
+        <div style="font-size: 13px; color: #333; margin-bottom: 12px; font-weight: bold;">what's weighing on you?</div>
+        <textarea id="worryInput" placeholder="type your worry... (anonymous)" style="width: 100%; height: 150px; padding: 12px; border: 1px solid #bbb; border-radius: 3px; font-family: 'Comic Sans MS', cursive, sans-serif; font-size: 13px; resize: none; background: #fffef0; color: #333;"></textarea>
         <div style="margin-top: 12px; display: flex; gap: 8px;">
-          <button id="worrySubmitBtn" class="tool" style="flex: 1;">submit</button>
-          <button id="worryViewGalleryBtn" class="tool" style="flex: 1;">view others</button>
+          <button id="worrySubmitBtn" class="tool" style="flex: 1; font-family: 'Comic Sans MS', cursive; font-weight: bold; cursor: pointer;">submit</button>
+          <button id="worryViewGalleryBtn" class="tool" style="flex: 1; font-family: 'Comic Sans MS', cursive; font-weight: bold; cursor: pointer;">view others</button>
         </div>
-        <div id="worryStatus" style="font-size: 11px; color: #666; margin-top: 8px; min-height: 14px;"></div>
+        <div id="worryStatus" style="font-size: 11px; color: #666; margin-top: 8px; min-height: 14px; font-family: 'Comic Sans MS', cursive;"></div>
       </div>
 
       <div id="worryGalleryPanel" class="worry-panel" style="display: none;">
-        <div style="font-size: 13px; color: #333; margin-bottom: 12px;">worries from your community</div>
-        <div id="worryGalleryGrid" style="display: flex; flex-wrap: wrap; gap: 12px; max-height: 300px; overflow-y: auto;">
-          <div style="color: #999; width: 100%;">loading...</div>
+        <div style="font-size: 13px; color: #333; margin-bottom: 12px; font-weight: bold;">worries from your community</div>
+        <div id="worryGalleryGrid" style="display: flex; flex-wrap: wrap; gap: 12px; max-height: 250px; overflow-y: auto;">
+          <div style="color: #999; width: 100%; text-align: center; font-family: 'Comic Sans MS', cursive;">loading...</div>
         </div>
         <div style="margin-top: 12px;">
-          <button id="worryBackBtn" class="tool" style="width: 100%;">back</button>
+          <button id="worryBackBtn" class="tool" style="width: 100%; font-family: 'Comic Sans MS', cursive; font-weight: bold; cursor: pointer;">back</button>
         </div>
       </div>
     </div>

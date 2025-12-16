@@ -475,15 +475,15 @@ function initializeGlazing() {
   // Make it bigger and taller for better painting visibility
   // Use LatheGeometry to match the main bowl shape
   const points = [];
-  points.push(new THREE.Vector2(1.2, 0.0));   // Top rim, wider
-  points.push(new THREE.Vector2(1.125, 0.225)); // Curve down
-  points.push(new THREE.Vector2(0.9, 0.6));   // Bowl wall
-  points.push(new THREE.Vector2(0.75, 0.9));   // More curve
-  points.push(new THREE.Vector2(0.675, 1.125)); // Lower curve
-  points.push(new THREE.Vector2(0.6, 1.425));  // Bottom, narrow
+  points.push(new THREE.Vector2(1.2, 0.0));   // top
+  points.push(new THREE.Vector2(1.125, 0.225)); // curve
+  points.push(new THREE.Vector2(0.9, 0.6));   // idk bro height
+  points.push(new THREE.Vector2(0.75, 0.9));   // even more curve
+  points.push(new THREE.Vector2(0.675, 1.125)); // con..cave curve
+  points.push(new THREE.Vector2(0.6, 1.425));  // bottom
   
   const bowlGeometry = new THREE.LatheGeometry(points, 32);
-  
+
   // Create inner bowl geometry
   const innerPoints = [];
   innerPoints.push(new THREE.Vector2(1.1, 0.1));   // Top rim, slightly inset
@@ -1089,18 +1089,34 @@ async function submitWorry() {
 
   if (submitBtn) submitBtn.disabled = true;
   if (status) status.textContent = "sharing your worry...";
+  
+  console.log('Submitting worry:', worry);
 
   try {
+    // Create abort controller with 10 second timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    
     const response = await fetch('/api/worries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ worry })
+      body: JSON.stringify({ worry }),
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
+    
+    console.log('Worry response status:', response.status);
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Server error response:', errorText);
       throw new Error(`Server error: ${response.status}`);
     }
 
+    const result = await response.json();
+    console.log('Worry saved:', result);
+    
     if (status) status.textContent = "worry shared anonymously 💫";
     if (input) input.value = "";
     
@@ -1110,7 +1126,7 @@ async function submitWorry() {
     }, 2000);
   } catch (error) {
     console.error('Error submitting worry:', error);
-    if (status) status.textContent = "error sharing: " + error.message;
+    if (status) status.textContent = "error: " + error.message;
   } finally {
     if (submitBtn) submitBtn.disabled = false;
   }

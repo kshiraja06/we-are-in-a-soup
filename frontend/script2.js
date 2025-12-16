@@ -393,27 +393,9 @@
     worryBox.receiveShadow = true;
     
     scene.add(worryBox);
+    // Don't add to collision system - it's purely visual/interactive
     
-    // Add a label on top as a separate mesh
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 128;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#333';
-    ctx.font = 'bold 36px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('worry box', 128, 60);
-    ctx.font = '20px Arial';
-    ctx.fillText('📝 share your worries', 128, 95);
-    
-    const labelTexture = new THREE.CanvasTexture(canvas);
-    const labelMaterial = new THREE.MeshStandardMaterial({ map: labelTexture, roughness: 0.6 });
-    const labelGeometry = new THREE.PlaneGeometry(2, 0.8);
-    const label = new THREE.Mesh(labelGeometry, labelMaterial);
-    label.position.z = 0.61;
-    worryBox.add(label);
-    
-    console.log('Added worry box to scene');
+    console.log('Added worry box to scene at position:', worryBox.position);
   } catch (err) {
     console.error('Failed to create worry box:', err);
   }
