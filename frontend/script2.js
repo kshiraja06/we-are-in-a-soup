@@ -23,22 +23,29 @@
 
   // Scene & Camera
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x2b2f33);
+  scene.background = new THREE.Color(0x87CEEB); // Sky blue background
   const camera = new THREE.PerspectiveCamera(50, 2, 0.1, 500);
   scene.add(camera);
 
   // Camera controls
   let yaw = 0, pitch = 0;
 
-  // Lighting
-  scene.add(new THREE.HemisphereLight(0xfff2cc, 0x9fc5e8, 0.3));
-  const dir = new THREE.DirectionalLight(0xfff2cc, 0.3);
+  // Soft warm lighting
+  const hemisphereLight = new THREE.HemisphereLight(0xfff5e6, 0xffe0b3, 0.4); // Warm top, warmer bottom
+  scene.add(hemisphereLight);
+  
+  const dir = new THREE.DirectionalLight(0xffe5cc, 0.25); // Soft warm directional light
   dir.position.set(20, 30, 20);
   dir.castShadow = true;
   dir.shadow.mapSize.width = 2048;
   dir.shadow.mapSize.height = 2048;
   scene.add(dir);
-  scene.add(new THREE.AmbientLight(0xfff2cc, 0.5));
+  
+  // Additional soft ambient light
+  scene.add(new THREE.AmbientLight(0xfff5e6, 0.6)); // Warm ambient
+  
+  // Store collider visuals for later cleanup if needed
+  const colliderVisuals = [];
 
   let model;
   let meshColliders = [];
@@ -66,6 +73,18 @@
         if (m.material) {
           m.material.roughness = 0.5;
           m.material.metalness = 0.1;
+          // Make room materials mostly white
+          if (!m.name.toLowerCase().includes('coll_')) {
+            if (Array.isArray(m.material)) {
+              m.material.forEach(mat => {
+                if (mat.color) mat.color.setHex(0xffffff);
+                if (mat.emissive) mat.emissive.setHex(0x000000);
+              });
+            } else {
+              if (m.material.color) m.material.color.setHex(0xffffff);
+              if (m.material.emissive) m.material.emissive.setHex(0x000000);
+            }
+          }
         }
         // Check if this is a collision mesh (name contains "coll_")
         if (m.name.toLowerCase().includes('coll_')) {
@@ -121,17 +140,51 @@
     } else {
       console.log('Using', meshColliders.length, 'collision meshes from Blender');
     }
+
+    // Create visual outlines for all colliders
+    meshColliders.forEach((box, index) => {
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+      
+      const geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
+      const edges = new THREE.EdgesGeometry(geometry);
+      const line = new THREE.LineSegments(
+        edges,
+        new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 })
+      );
+      line.position.copy(center);
+      scene.add(line);
+      colliderVisuals.push(line);
+      console.log(`Created collider visual ${index} at`, center, 'size', size);
+    });
   } catch (err) {
     console.error('Failed to load classroom.glb, using fallback box');
     model = new THREE.Mesh(
       // 3x larger fallback room
       new THREE.BoxGeometry(60, 18, 60),
-      new THREE.MeshStandardMaterial({ color: 0x8b8b8b })
+      new THREE.MeshStandardMaterial({ color: 0xffffff }) // White fallback room
     );
     model.position.set(0, 3, 0);
     scene.add(model);
     const box = new THREE.Box3().setFromObject(model);
     meshColliders.push(box);
+    
+    // Create visual outline for fallback collider
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    const geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
+    const edges = new THREE.EdgesGeometry(geometry);
+    const line = new THREE.LineSegments(
+      edges,
+      new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 })
+    );
+    line.position.copy(center);
+    scene.add(line);
+    colliderVisuals.push(line);
   }
 
   // Load claytable
