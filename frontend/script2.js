@@ -296,7 +296,19 @@
     points.push(new THREE.Vector2(0.45, 0.75)); // Lower curve
     points.push(new THREE.Vector2(0.4, 0.95));  // Bottom, narrow
     
+    // Create outer bowl geometry
     const bowlGeometry = new THREE.LatheGeometry(points, 32); // 32 segments around
+    
+    // Create inner bowl geometry (slightly smaller for inside surface)
+    const innerPoints = [];
+    innerPoints.push(new THREE.Vector2(0.75, 0.05));   // Top rim, slightly inset
+    innerPoints.push(new THREE.Vector2(0.7, 0.2));     // Curve down
+    innerPoints.push(new THREE.Vector2(0.55, 0.45));   // Bowl wall
+    innerPoints.push(new THREE.Vector2(0.45, 0.65));   // More curve
+    innerPoints.push(new THREE.Vector2(0.4, 0.8));     // Lower curve
+    innerPoints.push(new THREE.Vector2(0.38, 0.95));   // Bottom, slightly inset
+    
+    const innerBowlGeometry = new THREE.LatheGeometry(innerPoints, 32);
     
     // Create a canvas texture for painting on the bowl
     const textureSize = 512;
@@ -323,7 +335,22 @@
       metalness: 0.0   // No metalness, pure ceramic
     });
     
-    glazingBowl = new THREE.Mesh(bowlGeometry, bowlMaterial);
+    // Create outer bowl
+    const outerBowl = new THREE.Mesh(bowlGeometry, bowlMaterial);
+    
+    // Create inner bowl material (slightly darker for inside)
+    const innerMaterial = new THREE.MeshStandardMaterial({
+      color: 0xc9b899,  // Slightly darker ceramic color for inside
+      roughness: 0.5,
+      metalness: 0.0
+    });
+    const innerBowl = new THREE.Mesh(innerBowlGeometry, innerMaterial);
+    
+    // Create a group to hold both outer and inner bowl
+    glazingBowl = new THREE.Group();
+    glazingBowl.add(outerBowl);
+    glazingBowl.add(innerBowl);
+    
     // Position bowl on top of claytable, centered
     // Bowl height is ~1.0 units, position it on the table
     glazingBowl.position.set(tableCenter.x, tableTop + 1.0, tableCenter.z);

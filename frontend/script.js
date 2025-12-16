@@ -469,7 +469,7 @@ function initializeGlazing() {
   // Create camera - position at an angle to show 3D shape better (adjusted for larger bowl)
   glazing3DCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
   glazing3DCamera.position.set(4, 3, 5); // Moved back and up for larger bowl
-  glazing3DCamera.lookAt(0, 0, 0);
+  glazing3DCamera.lookAt(0, -1, 0); // Look slightly higher to center bowl
   
   // Create bowl for glazing view - use texture from main bowl if available, otherwise create new
   // Make it bigger and taller for better painting visibility
@@ -483,6 +483,17 @@ function initializeGlazing() {
   points.push(new THREE.Vector2(0.6, 1.425));  // Bottom, narrow
   
   const bowlGeometry = new THREE.LatheGeometry(points, 32);
+  
+  // Create inner bowl geometry
+  const innerPoints = [];
+  innerPoints.push(new THREE.Vector2(1.1, 0.1));   // Top rim, slightly inset
+  innerPoints.push(new THREE.Vector2(1.0, 0.3));   // Curve down
+  innerPoints.push(new THREE.Vector2(0.8, 0.75));  // Bowl wall
+  innerPoints.push(new THREE.Vector2(0.65, 1.05)); // More curve
+  innerPoints.push(new THREE.Vector2(0.575, 1.275)); // Lower curve
+  innerPoints.push(new THREE.Vector2(0.55, 1.425));  // Bottom, slightly inset
+  
+  const innerBowlGeometry = new THREE.LatheGeometry(innerPoints, 32);
   
   let textureCanvas, textureCtx, texture;
   
@@ -516,7 +527,21 @@ function initializeGlazing() {
     metalness: 0.0   // No metalness
   });
   
-  glazing3DBowl = new THREE.Mesh(bowlGeometry, bowlMaterial);
+  // Create outer bowl
+  const outerBowl = new THREE.Mesh(bowlGeometry, bowlMaterial);
+  
+  // Create inner bowl material
+  const innerMaterial = new THREE.MeshStandardMaterial({
+    color: 0xc9b899,  // Slightly darker ceramic color for inside
+    roughness: 0.5,
+    metalness: 0.0
+  });
+  const innerBowl = new THREE.Mesh(innerBowlGeometry, innerMaterial);
+  
+  // Create a group to hold both outer and inner bowl
+  glazing3DBowl = new THREE.Group();
+  glazing3DBowl.add(outerBowl);
+  glazing3DBowl.add(innerBowl);
   glazing3DBowl.rotation.x = Math.PI; // Flip bowl right-side up
   glazing3DBowl.userData.textureCanvas = textureCanvas;
   glazing3DBowl.userData.textureContext = textureCtx;
