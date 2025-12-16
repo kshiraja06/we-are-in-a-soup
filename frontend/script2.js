@@ -386,8 +386,9 @@
     });
     worryBox = new THREE.Mesh(worryBoxGeometry, worryBoxMaterial);
     
-    // Position worry box in the scene (away from other tables)
-    worryBox.position.set(-60, 2.5, -50);
+    // Position worry box in the scene (closer to player spawn for visibility)
+    // Player starts at (70, 3.5, 10), so put worry box nearby
+    worryBox.position.set(40, 2.5, 20);
     worryBox.castShadow = true;
     worryBox.receiveShadow = true;
     
