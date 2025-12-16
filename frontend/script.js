@@ -789,10 +789,31 @@ function getUVFromMouse(event, canvas) {
   glazingPointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
   
   glazingRaycaster.setFromCamera(glazingPointer, glazing3DCamera);
-  const intersects = glazingRaycaster.intersectObject(glazing3DBowl);
+  
+  // Raycast against children of the group (the actual mesh objects)
+  const intersects = glazingRaycaster.intersectObjects(glazing3DBowl.children);
   
   if (intersects.length > 0) {
-    return intersects[0].uv;
+    const intersection = intersects[0];
+    // If this intersection has UV, use it; otherwise use first outer bowl geometry
+    if (intersection.uv) {
+      return intersection.uv;
+    }
+    // Fallback: project mouse position to a simple 0-1 coordinate based on screen position
+    // Use the bowl outline circle to map mouse position
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const relX = clientX - rect.left - centerX;
+    const relY = clientY - rect.top - centerY;
+    const radius = Math.min(rect.width, rect.height) / 2 * 0.8;
+    
+    const dist = Math.sqrt(relX * relX + relY * relY);
+    if (dist > radius) return null; // Outside the bowl circle
+    
+    // Map to texture coordinates (0-1)
+    const u = (relX / radius) * 0.5 + 0.5;
+    const v = (relY / radius) * 0.5 + 0.5;
+    return new THREE.Vector2(u, v);
   }
   return null;
 }
