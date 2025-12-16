@@ -351,6 +351,70 @@ async function openGallery(){
 }
 document.getElementById("closeGallery").addEventListener("click",()=>{const modal=document.getElementById("galleryModal"); modal.classList.add("hidden");});
 
+// Bowl Gallery Functions
+async function loadBowlGallery() {
+  try {
+    const response = await fetch('/api/paintings?t=' + Date.now());
+    if (!response.ok) return;
+    
+    const paintings = await response.json();
+    const bowlGalleryGrid = document.getElementById('bowlGalleryGrid');
+    if (!bowlGalleryGrid) return;
+    
+    // Filter only bowl-type paintings
+    const bowls = paintings.filter(p => p.type === 'bowl');
+    bowlGalleryGrid.innerHTML = '';
+    
+    if (bowls.length === 0) {
+      bowlGalleryGrid.innerHTML = "<div style='color:#777;padding:12px'>No bowls saved yet. Paint a bowl and save it!</div>";
+      return;
+    }
+    
+    bowls.forEach((bowl) => {
+      const box = document.createElement('div');
+      box.className = 'thumb';
+      const img = document.createElement('img');
+      img.src = bowl.imageData;
+      img.alt = bowl.name;
+      const nameEl = document.createElement('div');
+      nameEl.className = 'thumb-name';
+      nameEl.textContent = bowl.name;
+      const downloadBtn = document.createElement('button');
+      downloadBtn.className = 'tool';
+      downloadBtn.textContent = 'Download';
+      downloadBtn.style.width = '100%';
+      downloadBtn.style.marginTop = '4px';
+      downloadBtn.addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.href = bowl.imageData;
+        link.download = bowl.name + '.png';
+        link.click();
+      });
+      box.appendChild(img);
+      box.appendChild(nameEl);
+      box.appendChild(downloadBtn);
+      bowlGalleryGrid.appendChild(box);
+    });
+  } catch (error) {
+    console.error('Error loading bowl gallery:', error);
+  }
+}
+
+function openBowlGallery() {
+  const modal = document.getElementById("bowlGalleryModal");
+  if (modal) {
+    modal.classList.remove("hidden");
+    loadBowlGallery();
+  }
+}
+
+document.getElementById("closeBowlGallery")?.addEventListener("click", () => {
+  const modal = document.getElementById("bowlGalleryModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+});
+
 document.getElementById("minBtn").addEventListener("click",()=>{ const w=document.getElementById("paintWindow"); w.style.display = (w.style.display==="none") ? "flex" : "none"; });
 document.getElementById("maxBtn").addEventListener("click",()=>{
   const w=document.querySelector(".win");
@@ -409,9 +473,16 @@ function initializeGlazing() {
   
   // Create bowl for glazing view - use texture from main bowl if available, otherwise create new
   // Make it bigger and taller for better painting visibility
-  const bowlRadius = 1.2; // Bigger radius
-  const bowlHeight = 1.5; // Taller
-  const bowlGeometry = new THREE.CylinderGeometry(bowlRadius, bowlRadius, bowlHeight, 32, 1, true); // Perfectly circular
+  // Use LatheGeometry to match the main bowl shape
+  const points = [];
+  points.push(new THREE.Vector2(1.2, 0.0));   // Top rim, wider
+  points.push(new THREE.Vector2(1.125, 0.225)); // Curve down
+  points.push(new THREE.Vector2(0.9, 0.6));   // Bowl wall
+  points.push(new THREE.Vector2(0.75, 0.9));   // More curve
+  points.push(new THREE.Vector2(0.675, 1.125)); // Lower curve
+  points.push(new THREE.Vector2(0.6, 1.425));  // Bottom, narrow
+  
+  const bowlGeometry = new THREE.LatheGeometry(points, 32);
   
   let textureCanvas, textureCtx, texture;
   
@@ -427,18 +498,22 @@ function initializeGlazing() {
     textureCanvas.width = textureSize;
     textureCanvas.height = textureSize;
     textureCtx = textureCanvas.getContext('2d');
-    textureCtx.fillStyle = '#e8d5b7';
+    // Fill with cream ceramic color
+    textureCtx.fillStyle = '#d4c5a9';
     textureCtx.fillRect(0, 0, textureSize, textureSize);
+    // Add blue stripe at top
+    textureCtx.fillStyle = '#1e3a8a';
+    textureCtx.fillRect(0, 0, textureSize, textureSize * 0.15);
     
     texture = new THREE.CanvasTexture(textureCanvas);
     texture.needsUpdate = true;
   }
   
-  // Make bowl shinier to match main bowl
+  // Ceramic material - not metallic
   const bowlMaterial = new THREE.MeshStandardMaterial({ 
     map: texture,
-    roughness: 0.3, // Lower = shinier
-    metalness: 0.4  // Higher = more metallic/shiny
+    roughness: 0.5,  // Ceramic is semi-gloss
+    metalness: 0.0   // No metalness
   });
   
   glazing3DBowl = new THREE.Mesh(bowlGeometry, bowlMaterial);
@@ -528,6 +603,10 @@ function initializeGlazing() {
   
   document.getElementById("glazingSaveBtn")?.addEventListener("click", () => {
     saveBowl();
+  });
+  
+  document.getElementById("glazingGalleryBtn")?.addEventListener("click", () => {
+    openBowlGallery();
   });
   
   document.getElementById("glazingDownloadBtn")?.addEventListener("click", () => {
@@ -754,8 +833,12 @@ function clearBowlTexture() {
     const mainCanvas = window.glazingBowl.userData.textureCanvas;
     const mainTexture = window.glazingBowl.userData.texture;
     
-    mainCtx.fillStyle = '#e8d5b7';
+    // Clear with cream ceramic color
+    mainCtx.fillStyle = '#d4c5a9';
     mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+    // Add blue stripe at top
+    mainCtx.fillStyle = '#1e3a8a';
+    mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height * 0.15);
     mainTexture.needsUpdate = true;
   }
 }
@@ -768,8 +851,8 @@ function updateGlazingStatus(message) {
 }
 
 async function saveBowl() {
-  if (!glazing3DBowl || !glazing3DBowl.userData.textureCanvas) {
-    updateGlazingStatus("Error: Bowl texture not found");
+  if (!glazing3DBowl) {
+    updateGlazingStatus("Error: Bowl not found");
     return;
   }
   
@@ -777,11 +860,9 @@ async function saveBowl() {
   const saveBtn = document.getElementById("glazingSaveBtn");
   
   // Update status
-  if (statusbar) statusbar.textContent = 'Saving bowl...';
+  if (statusbar) statusbar.textContent = 'Rendering bowl...';
   if (saveBtn) saveBtn.disabled = true;
   
-  // Get the bowl texture as image data
-  const textureData = glazing3DBowl.userData.textureCanvas.toDataURL('image/png');
   const name = prompt('Name your bowl:');
   
   if (!name) {
@@ -791,10 +872,54 @@ async function saveBowl() {
   }
   
   try {
+    // Create a temporary canvas for rendering the 3D bowl
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = 512;
+    tempCanvas.height = 512;
+    
+    // Create a temporary 3D scene for rendering
+    const tempRenderer = new THREE.WebGLRenderer({ canvas: tempCanvas, antialias: true, alpha: true });
+    tempRenderer.setSize(512, 512);
+    const tempScene = new THREE.Scene();
+    tempScene.background = new THREE.Color(0xd4c5a9); // Ceramic cream background
+    
+    // Create camera for nice bowl view
+    const tempCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
+    tempCamera.position.set(3, 2, 3);
+    tempCamera.lookAt(0, 0, 0);
+    
+    // Clone the bowl for rendering
+    const bowlGeometry = glazing3DBowl.geometry.clone();
+    const bowlMaterial = glazing3DBowl.material.clone();
+    const tempBowl = new THREE.Mesh(bowlGeometry, bowlMaterial);
+    tempScene.add(tempBowl);
+    
+    // Add lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    tempScene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    directionalLight.position.set(5, 5, 5);
+    tempScene.add(directionalLight);
+    
+    // Render the bowl
+    tempRenderer.render(tempScene, tempCamera);
+    
+    // Get canvas image data
+    const imageData = tempCanvas.toDataURL('image/png');
+    
+    // Clean up
+    tempRenderer.dispose();
+    tempBowl.geometry.dispose();
+    tempBowl.material.dispose();
+    
+    // Update status
+    if (statusbar) statusbar.textContent = 'Saving bowl...';
+    
+    // Send to server
     const response = await fetch('/api/paintings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageData: textureData, name, type: 'bowl' })
+      body: JSON.stringify({ imageData, name, type: 'bowl' })
     });
     
     if (!response.ok) {
@@ -821,8 +946,8 @@ async function saveBowl() {
     if (statusbar) statusbar.textContent = 'Bowl saved!';
     alert('Bowl saved successfully!');
     
-    // Reload gallery after saving
-    loadGallery();
+    // Reload bowl gallery after saving
+    loadBowlGallery();
     
     // Reset status after 2 seconds
     setTimeout(() => {
@@ -888,7 +1013,7 @@ async function downloadFiredBowl() {
       quality: 10,
       width: 512,
       height: 512,
-      workerScript: 'https://unpkg.com/gif.js@0.2.0/dist/gif.worker.js'
+      workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
     });
     
     // Render bowl at different rotation angles to create animation
@@ -913,6 +1038,16 @@ async function downloadFiredBowl() {
     // Add frames to GIF
     frames.forEach(frame => {
       gif.addFrame(frame, { delay: 200 }); // 200ms delay between frames
+    });
+    
+    // Add error handler
+    gif.on('error', function(error) {
+      console.error('GIF creation error:', error);
+      updateGlazingStatus("Error creating GIF: " + error.message);
+      alert("Error creating GIF. Please try again.");
+      tempRenderer.dispose();
+      tempBowl.geometry.dispose();
+      tempBowl.material.dispose();
     });
     
     // Render the GIF

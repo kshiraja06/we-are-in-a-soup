@@ -111,6 +111,16 @@
     </div>
   </div>
 
+  <div id="bowlGalleryModal" class="modal hidden">
+    <div class="modal-inner">
+      <div class="modal-head">
+        <h3>Saved Bowls</h3>
+        <button id="closeBowlGallery" class="tool">Close</button>
+      </div>
+      <div id="bowlGalleryGrid" class="gallery-grid"></div>
+    </div>
+  </div>
+
   <!-- Glazing Window -->
   <div id="glazingWindow" class="win hidden-init">
     <div class="titlebar">
@@ -131,6 +141,7 @@
           <button id="glazingEraserTool" class="tool">Eraser</button>
           <button id="glazingClearBtn" class="tool">Clear</button>
           <button id="glazingSaveBtn" class="tool">Save</button>
+          <button id="glazingGalleryBtn" class="tool">Gallery</button>
           <button id="glazingDownloadBtn" class="tool" style="display: none;">Download GIF</button>
         </div>
         <div class="pal-wrap">
@@ -159,7 +170,7 @@
   <link rel="stylesheet" href="./style.css?v=3" />
   <script src="https://unpkg.com/three@0.128.0/build/three.js"></script>
   <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="https://unpkg.com/gif.js@0.2.0/dist/gif.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
   <script src="./script.js?v=3"></script>
   <script src="./script2.js?v=3"></script>
 </body>

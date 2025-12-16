@@ -285,10 +285,18 @@
     const tableCenter = new THREE.Vector3();
     tableBox.getCenter(tableCenter);
     
-    // Create a taller, perfectly circular bowl shape with proper UV mapping for texture
-    const bowlRadius = 0.8;
-    const bowlHeight = 1.0; // Made taller
-    const bowlGeometry = new THREE.CylinderGeometry(bowlRadius, bowlRadius, bowlHeight, 32, 1, true); // Perfectly circular (same radius top and bottom)
+    // Create a realistic ceramic bowl shape using LatheGeometry
+    const points = [];
+    // Create a bowl profile: starts wide at top, curves down, narrow at bottom
+    // (radius, y) coordinates for the profile that will be rotated
+    points.push(new THREE.Vector2(0.8, 0.0));   // Top rim, wider
+    points.push(new THREE.Vector2(0.75, 0.15)); // Curve down
+    points.push(new THREE.Vector2(0.6, 0.4));   // Bowl wall
+    points.push(new THREE.Vector2(0.5, 0.6));   // More curve
+    points.push(new THREE.Vector2(0.45, 0.75)); // Lower curve
+    points.push(new THREE.Vector2(0.4, 0.95));  // Bottom, narrow
+    
+    const bowlGeometry = new THREE.LatheGeometry(points, 32); // 32 segments around
     
     // Create a canvas texture for painting on the bowl
     const textureSize = 512;
@@ -296,23 +304,29 @@
     bowlTextureCanvas.width = textureSize;
     bowlTextureCanvas.height = textureSize;
     const bowlTextureCtx = bowlTextureCanvas.getContext('2d');
-    // Fill with base clay color
-    bowlTextureCtx.fillStyle = '#e8d5b7';
+    
+    // Fill with cream/tan ceramic color
+    bowlTextureCtx.fillStyle = '#d4c5a9';
     bowlTextureCtx.fillRect(0, 0, textureSize, textureSize);
+    
+    // Add blue stripe around the rim (top portion)
+    bowlTextureCtx.fillStyle = '#1e3a8a';
+    bowlTextureCtx.fillRect(0, 0, textureSize, textureSize * 0.15); // Blue stripe at top
     
     const bowlTexture = new THREE.CanvasTexture(bowlTextureCanvas);
     bowlTexture.needsUpdate = true;
     
-    // Make bowl shinier (lower roughness, higher metalness)
+    // Ceramic material properties: slightly glossy, not metallic
     const bowlMaterial = new THREE.MeshStandardMaterial({ 
       map: bowlTexture,
-      roughness: 0.3, // Lower = shinier (was 0.8)
-      metalness: 0.4  // Higher = more metallic/shiny (was 0.1)
+      roughness: 0.5,  // Ceramic is semi-gloss
+      metalness: 0.0   // No metalness, pure ceramic
     });
     
     glazingBowl = new THREE.Mesh(bowlGeometry, bowlMaterial);
     // Position bowl on top of claytable, centered
-    glazingBowl.position.set(tableCenter.x, tableTop + bowlHeight / 2 + 0.1, tableCenter.z);
+    // Bowl height is ~1.0 units, position it on the table
+    glazingBowl.position.set(tableCenter.x, tableTop + 0.6, tableCenter.z);
     glazingBowl.castShadow = true;
     glazingBowl.receiveShadow = true;
     
