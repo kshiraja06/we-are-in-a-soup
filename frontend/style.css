@@ -431,8 +431,8 @@ input[type=range] {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3); /* Semi-transparent dark backdrop */
-  display: none; /* Start hidden, will be shown after scene loads */
+  background: #b4e197; /* Pistachio green */
+  display: none;
   align-items: center;
   justify-content: center;
   z-index: 10000;
@@ -451,121 +451,106 @@ input[type=range] {
 }
 
 .intro-content {
-  text-align: left;
+  text-align: center;
   color: #000;
   padding: 0;
-  width: 700px;
-  background: #c0c0c0;
-  border: 2px outset #c0c0c0;
-  box-shadow: 
-    inset -2px -2px 0 #808080,
-    inset 2px 2px 0 #ffffff;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 50px;
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, #b4e197 0%, #b4e197 50%, #391d01 50%, #391d01 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Georgia, serif;
   position: relative;
 }
 
 /* Windows 95 style title bar */
 .intro-content::before {
-  content: "we are in a soup - start page";
-  display: block;
-  background: linear-gradient(to bottom, #000080 0%, #1084d0 100%);
-  color: #ffffff;
-  padding: 3px 4px 3px 20px;
-  font-size: 11px;
-  font-weight: bold;
-  font-family: 'MS Sans Serif', 'Courier New', monospace;
-  border-bottom: 1px solid #000;
-  letter-spacing: 0.5px;
-  position: relative;
+  content: "";
+  display: none;
 }
 
 .intro-content::after {
   content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 14px;
-  background: #c0c0c0;
-  border: 1px outset #c0c0c0;
-  z-index: 1;
+  display: none;
 }
 
 .intro-inner {
-  padding: 20px 24px 24px 24px;
-  background: #ffffff;
-  margin: 2px;
-  border: 1px inset #808080;
+  padding: 0;
+  background: transparent;
+  margin: 0;
+  border: none;
+  text-align: center;
 }
 
 .intro-content h1 {
-  font-size: 24px;
-  margin: 0 0 12px 0;
-  font-weight: bold;
-  color: #000;
-  font-family: 'Courier New', Courier, monospace;
-  text-transform: uppercase;
-  letter-spacing: 2px;
+  font-size: 72px;
+  margin: 0 0 40px 0;
+  font-weight: 300;
+  color: #391d01;
+  font-family: Georgia, serif;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .intro-tagline {
-  font-size: 13px;
-  color: #000;
-  margin-bottom: 20px;
-  border-bottom: 1px solid #c0c0c0;
-  padding-bottom: 8px;
-  font-family: 'Courier New', Courier, monospace;
+  font-size: 24px;
+  color: #391d01;
+  margin-bottom: 40px;
+  border-bottom: none;
+  padding-bottom: 0;
+  font-family: Georgia, serif;
+  font-style: italic;
+  line-height: 1.6;
 }
 
 .intro-instructions {
-  margin: 16px 0 20px 0;
-  line-height: 2;
-  font-size: 13px;
-  font-family: 'Courier New', Courier, monospace;
+  margin: 40px 0;
+  line-height: 1.8;
+  font-size: 18px;
+  font-family: Georgia, serif;
+  color: #391d01;
 }
 
 .intro-instructions p {
-  margin: 8px 0;
-  color: #000;
+  margin: 16px 0;
+  color: #391d01;
+  font-style: italic;
 }
 
 .intro-instructions strong {
-  color: #000;
+  color: #391d01;
   font-weight: bold;
 }
 
 .start-button {
-  margin-top: 24px;
-  padding: 10px 32px;
-  font-size: 13px;
-  font-weight: bold;
-  background: #c0c0c0;
-  color: #000;
-  border: 2px outset #c0c0c0;
+  margin-top: 40px;
+  padding: 0;
+  font-size: 36px;
+  font-weight: 300;
+  background: transparent;
+  color: #b4e197;
+  border: 2px solid #b4e197;
   cursor: pointer;
-  font-family: 'MS Sans Serif', 'Courier New', monospace;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  box-shadow: 
-    inset -2px -2px 0 #808080,
-    inset 2px 2px 0 #ffffff;
+  font-family: Georgia, serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: none;
+  letter-spacing: 0;
+  box-shadow: none;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
 }
 
 .start-button:hover {
-  background: #d4d0c8;
+  background: rgba(180, 225, 151, 0.1);
 }
 
 .start-button:active {
-  border: 2px inset #c0c0c0;
-  box-shadow: 
-    inset 2px 2px 0 #808080,
+  border: 2px solid #b4e197;
+  box-shadow: none;
     inset -2px -2px 0 #ffffff;
 }
 

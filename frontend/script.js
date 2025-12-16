@@ -469,7 +469,7 @@ function initializeGlazing() {
   // Create camera - position at an angle to show 3D shape better (adjusted for larger bowl)
   glazing3DCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
   glazing3DCamera.position.set(2.5, 0.7, 3.2); // Eye-level view of the bowl
-  glazing3DCamera.lookAt(0, 0, 0); // Look at bowl center
+  glazing3DCamera.lookAt(0, -0.5, 0); // Look at bowl center
   
   // Create bowl for glazing view - use texture from main bowl if available, otherwise create new
   // Make it bigger and taller for better painting visibility
