@@ -631,29 +631,7 @@ input[type=range] {
   width: 520px !important;
 }
 
-/* Spiral binding effect on left */
-.worry-window::before {
-  content: '';
-  position: absolute;
-  left: 12px;
-  top: 20px;
-  bottom: 20px;
-  width: 20px;
-  background: repeating-linear-gradient(
-    90deg,
-    #d4a574 0px,
-    #d4a574 3px,
-    transparent 3px,
-    transparent 6px,
-    #d4a574 6px,
-    #d4a574 9px,
-    transparent 9px,
-    transparent 12px
-  );
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: -1;
-}
+
 
 .worry-window .titlebar {
   background: #f9f6f0;
