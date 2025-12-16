@@ -31,14 +31,14 @@
   let yaw = 0, pitch = 0;
 
   // Lighting
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.3));
-  const dir = new THREE.DirectionalLight(0xffffff, 0.3);
+  scene.add(new THREE.HemisphereLight(#fff2cc, #9fc5e8, 0.3));
+  const dir = new THREE.DirectionalLight(#fff2cc, 0.3);
   dir.position.set(20, 30, 20);
   dir.castShadow = true;
   dir.shadow.mapSize.width = 2048;
   dir.shadow.mapSize.height = 2048;
   scene.add(dir);
-  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  scene.add(new THREE.AmbientLight(#fff2cc, 0.5));
 
   let model;
   let meshColliders = [];
@@ -219,6 +219,12 @@
     pos.z = Math.max(-25, Math.min(25, pos.z));
   };
 
+  // Helper to update player collision box at a given position
+  const updatePlayerBox = (pos) => {
+    playerBox.min.set(pos.x - PLAYER.RADIUS, 0, pos.z - PLAYER.RADIUS);
+    playerBox.max.set(pos.x + PLAYER.RADIUS, ROOM.EYE_HEIGHT * 2, pos.z + PLAYER.RADIUS);
+  };
+
   canvas.addEventListener("pointerdown", e => {
     isDown = true;
     lastX = e.clientX;
@@ -281,9 +287,13 @@
       next.x += dx;
       next.z += dz;
       clamp(next);
-      
-      // TODO: Add collision check once coll_* objects are in Blender
-      player.copy(next);
+
+      // Collision check against coll_* meshes from Blender
+      updatePlayerBox(next);
+      const hit = meshColliders.some(box => box.intersectsBox(playerBox));
+      if (!hit) {
+        player.copy(next);
+      }
     }
 
     camera.position.set(player.x, ROOM.EYE_HEIGHT, player.z);
