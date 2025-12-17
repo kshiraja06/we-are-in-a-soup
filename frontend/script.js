@@ -357,13 +357,17 @@ document.getElementById("closeGallery").addEventListener("click",()=>{const moda
 
 // Bowl Gallery Functions
 async function loadBowlGallery() {
+  const bowlGalleryGrid = document.getElementById('bowlGalleryGrid');
+  if (!bowlGalleryGrid) return;
+  
+  // Show loading state
+  bowlGalleryGrid.innerHTML = "<div style='color:#777;padding:12px'>Loading your bowls...</div>";
+  
   try {
     const response = await fetch('/api/paintings?t=' + Date.now());
     if (!response.ok) return;
     
     const paintings = await response.json();
-    const bowlGalleryGrid = document.getElementById('bowlGalleryGrid');
-    if (!bowlGalleryGrid) return;
     
     // Filter only bowl-type paintings
     const bowls = paintings.filter(p => p.type === 'bowl');
@@ -908,7 +912,7 @@ async function saveBowl() {
   const saveBtn = document.getElementById("glazingSaveBtn");
   
   // Update status
-  if (statusbar) statusbar.textContent = 'Rendering bowl...';
+  if (statusbar) statusbar.textContent = 'Rendering bowl animation...';
   if (saveBtn) saveBtn.disabled = true;
   
   const name = prompt('Name your bowl:');
@@ -920,7 +924,16 @@ async function saveBowl() {
   }
   
   try {
-    // Create a temporary canvas for rendering the 3D bowl
+    // Create GIF of rotating bowl using gif.js
+    const gif = new GIF({
+      workers: 2,
+      quality: 10,
+      width: 512,
+      height: 512,
+      workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+    });
+
+    // Create a temporary canvas for rendering
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = 512;
     tempCanvas.height = 512;
@@ -931,7 +944,7 @@ async function saveBowl() {
     const tempScene = new THREE.Scene();
     tempScene.background = new THREE.Color(0xd4c5a9); // Ceramic cream background
     
-    // Create camera for nice bowl view
+    // Create camera for nice bowl view (same as glazing window)
     const tempCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
     tempCamera.position.set(2.5, 0.7, 3.2);
     tempCamera.lookAt(0, 0, 0);
@@ -955,11 +968,41 @@ async function saveBowl() {
     directionalLight.position.set(5, 5, 5);
     tempScene.add(directionalLight);
     
-    // Render the bowl
-    tempRenderer.render(tempScene, tempCamera);
+    // Render 60 frames (one full rotation at 60 frames)
+    if (statusbar) statusbar.textContent = 'Encoding animation...';
     
-    // Get canvas image data
-    const imageData = tempCanvas.toDataURL('image/png');
+    const totalFrames = 60;
+    for (let i = 0; i < totalFrames; i++) {
+      // Rotate bowl
+      tempBowlGroup.rotation.y += (Math.PI * 2) / totalFrames;
+      
+      // Render frame
+      tempRenderer.render(tempScene, tempCamera);
+      
+      // Get canvas image and add to GIF
+      const frameCanvas = tempRenderer.domElement;
+      gif.addFrame(frameCanvas, { delay: 50 }); // 50ms per frame = 20fps
+    }
+    
+    // When GIF is finished, download it
+    gif.on('finished', function(blob) {
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.download = name + '.gif';
+      link.click();
+      URL.revokeObjectURL(url);
+      
+      if (statusbar) statusbar.textContent = 'Bowl saved!';
+      
+      // Reset status after 2 seconds
+      setTimeout(() => {
+        if (statusbar) statusbar.textContent = 'Ready';
+      }, 2000);
+    });
+    
+    // Start rendering the GIF
+    gif.render();
     
     // Clean up
     tempRenderer.dispose();
@@ -970,6 +1013,46 @@ async function saveBowl() {
     
     // Update status
     if (statusbar) statusbar.textContent = 'Saving bowl...';
+    
+    // Send to server with GIF (use the first frame as thumbnail)
+    const firstFrameCanvas = document.createElement('canvas');
+    firstFrameCanvas.width = 512;
+    firstFrameCanvas.height = 512;
+    const firstFrameCtx = firstFrameCanvas.getContext('2d');
+    const firstFrameRenderer = new THREE.WebGLRenderer({ canvas: firstFrameCanvas, antialias: true, alpha: true });
+    firstFrameRenderer.setSize(512, 512);
+    const firstFrameScene = new THREE.Scene();
+    firstFrameScene.background = new THREE.Color(0xd4c5a9);
+    const firstFrameCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
+    firstFrameCamera.position.set(2.5, 0.7, 3.2);
+    firstFrameCamera.lookAt(0, 0, 0);
+    
+    // Clone bowl for first frame
+    const firstFrameBowlGroup = new THREE.Group();
+    glazing3DBowl.children.forEach(mesh => {
+      const clonedGeometry = mesh.geometry.clone();
+      const clonedMaterial = mesh.material.clone();
+      const clonedMesh = new THREE.Mesh(clonedGeometry, clonedMaterial);
+      clonedMesh.rotation.copy(mesh.rotation);
+      firstFrameBowlGroup.add(clonedMesh);
+    });
+    firstFrameBowlGroup.rotation.copy(glazing3DBowl.rotation);
+    firstFrameScene.add(firstFrameBowlGroup);
+    
+    const firstFrameAmbient = new THREE.AmbientLight(0xffffff, 0.6);
+    firstFrameScene.add(firstFrameAmbient);
+    const firstFrameDirectional = new THREE.DirectionalLight(0xffffff, 0.6);
+    firstFrameDirectional.position.set(5, 5, 5);
+    firstFrameScene.add(firstFrameDirectional);
+    
+    firstFrameRenderer.render(firstFrameScene, firstFrameCamera);
+    const imageData = firstFrameCanvas.toDataURL('image/png');
+    
+    firstFrameRenderer.dispose();
+    firstFrameBowlGroup.children.forEach(mesh => {
+      mesh.geometry.dispose();
+      mesh.material.dispose();
+    });
     
     // Send to server
     const response = await fetch('/api/paintings', {
@@ -999,16 +1082,10 @@ async function saveBowl() {
     }
     
     const result = await response.json();
-    if (statusbar) statusbar.textContent = 'Bowl saved!';
-    alert('Bowl saved successfully!');
     
     // Reload bowl gallery after saving
     loadBowlGallery();
     
-    // Reset status after 2 seconds
-    setTimeout(() => {
-      if (statusbar) statusbar.textContent = 'Ready';
-    }, 2000);
   } catch (error) {
     console.error('Error saving bowl:', error);
     if (statusbar) statusbar.textContent = 'Error: ' + error.message;
