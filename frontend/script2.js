@@ -145,7 +145,14 @@
                 m.material = m.material.clone();
               }
             }
-            console.log('Found ending wall:', m.name, 'Material cloned for glow effect');
+            
+            // Add wireframe outline to visualize the wall
+            const edges = new THREE.EdgesGeometry(m.geometry);
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 });
+            const wireframe = new THREE.LineSegments(edges, lineMaterial);
+            m.add(wireframe);
+            
+            console.log('Found ending wall:', m.name, 'Material cloned for glow effect, outline added');
           }
         }
       }
