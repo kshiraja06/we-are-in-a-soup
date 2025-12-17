@@ -443,37 +443,41 @@
     console.error('Failed to create kitchen box:', err);
   }
 
-  // Add ending zone marker (soft glow on wall that appears after all tables visited)
-  // Currently hidden - will be replaced with actual wall glow once correct wall is identified
-  let endingMarker;
-  try {
-    // Create a circular plane for the wall glow (hidden for now)
-    const markerGeometry = new THREE.CircleGeometry(3, 32);
-    const markerMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffff88,
-      transparent: true,
-      opacity: 0.6,
-      side: THREE.DoubleSide
+  // Store reference to the wall mesh that will glow
+  let targetWallMesh = null;
+  
+  // Find "coll wall inside 2" mesh and apply glow material to it
+  if (model) {
+    model.traverse(m => {
+      if (m.isMesh && m.name && m.name.toLowerCase().includes('coll wall inside 2')) {
+        targetWallMesh = m;
+        console.log('Found target wall mesh for glow:', m.name);
+        
+        // Store original material to restore later if needed
+        m.userData.originalMaterial = m.material;
+        
+        // Create emissive material for glow effect (initially not glowing)
+        m.userData.glowMaterial = new THREE.MeshStandardMaterial({
+          color: 0xffff88,
+          emissive: 0xffff88,
+          emissiveIntensity: 0,
+          transparent: true,
+          opacity: 0.8,
+          side: THREE.DoubleSide
+        });
+        
+        window.targetWallMesh = m;
+      }
     });
-    endingMarker = new THREE.Mesh(markerGeometry, markerMaterial);
-    endingMarker.position.set(ENDING_ZONE.x, 3, ENDING_ZONE.z);
-    endingMarker.rotation.y = Math.PI;
-    endingMarker.visible = false; // Keep hidden - not used until wall is identified
-    scene.add(endingMarker);
-    
-    // Point light also hidden
-    const glowLight = new THREE.PointLight(0xffff88, 1, 15);
-    glowLight.position.set(ENDING_ZONE.x, 3, ENDING_ZONE.z);
-    glowLight.visible = false;
-    scene.add(glowLight);
-    window.endingGlowLight = glowLight;
-    
-    window.endingMarker = endingMarker;
-    
-    console.log('Ending zone marker created but hidden - awaiting wall identification');
-  } catch (err) {
-    console.error('Failed to create ending marker:', err);
   }
+  
+  // Add point light for additional glow effect (positioned on left side of wall)
+  const glowLight = new THREE.PointLight(0xffff88, 0, 15);
+  glowLight.position.set(ENDING_ZONE.x - 5, 3, ENDING_ZONE.z); // Offset to left side
+  scene.add(glowLight);
+  window.endingGlowLight = glowLight;
+  
+  console.log('Wall glow system initialized for "coll wall inside 2"');
 
   // Input
   const raycaster = new THREE.Raycaster();
@@ -997,8 +1001,22 @@
     // Check proximity to objects for dialogue hints
     checkProximity();
 
-    // Ending marker kept hidden until correct wall is identified
-    // (Animation code disabled for now)
+    // Activate wall glow when all tables visited
+    if (window.targetWallMesh && window.tablesVisited >= TOTAL_TABLES) {
+      // Switch to glow material
+      if (window.targetWallMesh.material !== window.targetWallMesh.userData.glowMaterial) {
+        window.targetWallMesh.material = window.targetWallMesh.userData.glowMaterial;
+      }
+      
+      // Animate the glow (pulsing emissive intensity)
+      const pulseIntensity = 0.5 + Math.sin(t * 0.003) * 0.3;
+      window.targetWallMesh.material.emissiveIntensity = pulseIntensity;
+      
+      // Activate point light with pulsing
+      if (window.endingGlowLight) {
+        window.endingGlowLight.intensity = pulseIntensity * 2;
+      }
+    }
 
     camera.position.set(player.x, ROOM.EYE_HEIGHT, player.z);
     camera.rotation.order = "YXZ";
