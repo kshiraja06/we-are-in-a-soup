@@ -38,10 +38,10 @@
   let yaw = 0, pitch = 0;
 
   // Soft warm lighting
-  const hemisphereLight = new THREE.HemisphereLight(0xfff5e6, 0xffe0b3, 0.5); // Warm top, warmer bottom
+  const hemisphereLight = new THREE.HemisphereLight(0xfff5e6, 0xffe0b3, 0.3); // Warm top, warmer bottom
   scene.add(hemisphereLight);
   
-  const dir = new THREE.DirectionalLight(0xffe5cc, 0.3); // Soft warm directional light
+  const dir = new THREE.DirectionalLight(0xffe5cc, 0.2); // Soft warm directional light
   dir.position.set(20, 30, 20);
   dir.castShadow = true;
   dir.shadow.mapSize.width = 2048;
@@ -55,7 +55,7 @@
   scene.add(dir);
   
   // Additional soft ambient light
-  scene.add(new THREE.AmbientLight(0xfff5e6, 0.65)); // Warm ambient
+  scene.add(new THREE.AmbientLight(0xfff5e6, 0.45)); // Warm ambient
   
   // Store collider visuals for later cleanup if needed
   const colliderVisuals = [];
@@ -402,6 +402,32 @@
     console.error('Failed to create worry box:', err);
   }
 
+  // Add kitchen setup box placeholder
+  let kitchenBox;
+  try {
+    // Create a simple box for the kitchen setup station
+    const kitchenBoxGeometry = new THREE.BoxGeometry(2.0, 2.2, 1.5);
+    const kitchenBoxMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0xff8c42, // Orange color to differentiate from worry box
+      roughness: 0.7,
+      metalness: 0.0,
+      emissive: 0xff8c42,
+      emissiveIntensity: 0.2
+    });
+    kitchenBox = new THREE.Mesh(kitchenBoxGeometry, kitchenBoxMaterial);
+    
+    // Position kitchen box near the other interactive objects
+    kitchenBox.position.set(61, 1, 5);
+    kitchenBox.castShadow = true;
+    kitchenBox.receiveShadow = true;
+    
+    scene.add(kitchenBox);
+    
+    console.log('Added kitchen box to scene at position:', kitchenBox.position);
+  } catch (err) {
+    console.error('Failed to create kitchen box:', err);
+  }
+
   // Input
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
@@ -534,6 +560,15 @@
           worryWindow.style.display = "flex";
           worryWindow.classList.remove("hidden-init");
         }
+      }
+    }
+
+    // Check if clicking on kitchen box
+    if (kitchenBox) {
+      const intersects = raycaster.intersectObject(kitchenBox, true);
+      if (intersects.length) {
+        // Open kitchen setup page in new window
+        window.open('./kitchen-setup.html', '_blank');
       }
     }
   });
