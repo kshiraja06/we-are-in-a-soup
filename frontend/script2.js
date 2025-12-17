@@ -458,11 +458,10 @@
         
         // Create emissive material for glow effect (initially not glowing)
         m.userData.glowMaterial = new THREE.MeshStandardMaterial({
-          color: 0xffff88,
-          emissive: 0xffff88,
+          color: 0xffff00,
+          emissive: 0xffff00,
           emissiveIntensity: 0,
-          transparent: true,
-          opacity: 0.8,
+          transparent: false,
           side: THREE.DoubleSide
         });
         
@@ -471,11 +470,20 @@
     });
   }
   
-  // Add point light for additional glow effect (positioned on left side of wall)
-  const glowLight = new THREE.PointLight(0xffff88, 0, 15);
-  glowLight.position.set(ENDING_ZONE.x - 5, 3, ENDING_ZONE.z); // Offset to left side
-  scene.add(glowLight);
-  window.endingGlowLight = glowLight;
+  // Add multiple point lights for strong glow effect (positioned on left side of wall)
+  const glowLight1 = new THREE.PointLight(0xffff00, 0, 30);
+  glowLight1.position.set(ENDING_ZONE.x - 5, 3, ENDING_ZONE.z);
+  scene.add(glowLight1);
+  
+  const glowLight2 = new THREE.PointLight(0xffff00, 0, 30);
+  glowLight2.position.set(ENDING_ZONE.x - 5, 5, ENDING_ZONE.z);
+  scene.add(glowLight2);
+  
+  const glowLight3 = new THREE.PointLight(0xffff00, 0, 30);
+  glowLight3.position.set(ENDING_ZONE.x - 5, 1, ENDING_ZONE.z);
+  scene.add(glowLight3);
+  
+  window.endingGlowLights = [glowLight1, glowLight2, glowLight3];
   
   console.log('Wall glow system initialized for "coll wall inside 2"');
 
@@ -1006,15 +1014,18 @@
       // Switch to glow material
       if (window.targetWallMesh.material !== window.targetWallMesh.userData.glowMaterial) {
         window.targetWallMesh.material = window.targetWallMesh.userData.glowMaterial;
+        console.log('Wall glow activated!');
       }
       
-      // Animate the glow (pulsing emissive intensity)
-      const pulseIntensity = 0.5 + Math.sin(t * 0.003) * 0.3;
+      // Animate the glow (much stronger pulsing emissive intensity)
+      const pulseIntensity = 2.0 + Math.sin(t * 0.003) * 1.0;
       window.targetWallMesh.material.emissiveIntensity = pulseIntensity;
       
-      // Activate point light with pulsing
-      if (window.endingGlowLight) {
-        window.endingGlowLight.intensity = pulseIntensity * 2;
+      // Activate all point lights with strong pulsing
+      if (window.endingGlowLights) {
+        window.endingGlowLights.forEach(light => {
+          light.intensity = pulseIntensity * 5;
+        });
       }
     }
 
