@@ -924,151 +924,57 @@ async function saveBowl() {
   }
   
   try {
-    // Create GIF of rotating bowl using gif.js
-    if (typeof GIF === 'undefined') {
-      throw new Error('GIF.js library not loaded');
-    }
+    if (statusbar) statusbar.textContent = 'Saving bowl...';
     
-    const gif = new GIF({
-      workers: 2,
-      quality: 10,
-      width: 512,
-      height: 512,
-      workerScript: './gif.worker.js'
+    // Render current bowl to canvas
+    const canvas = renderer.domElement;
+    const imageData = canvas.toDataURL('image/png');
+    
+    // Send to server
+    const response = await fetch('/api/paintings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageData, name, type: 'bowl' })
     });
-
-    // Create a temporary canvas for rendering
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = 512;
-    tempCanvas.height = 512;
     
-    // Create a temporary 3D scene for rendering
-    const tempRenderer = new THREE.WebGLRenderer({ canvas: tempCanvas, antialias: true, alpha: true });
-    tempRenderer.setSize(512, 512);
-    const tempScene = new THREE.Scene();
-    tempScene.background = new THREE.Color(0xd4c5a9); // Ceramic cream background
-    
-    // Create camera for nice bowl view (same as glazing window)
-    const tempCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
-    tempCamera.position.set(2.5, 0.7, 3.2);
-    tempCamera.lookAt(0, 0, 0);
-    
-    // Clone the bowl group for rendering (it contains outer and inner bowls)
-    const tempBowlGroup = new THREE.Group();
-    glazing3DBowl.children.forEach(mesh => {
-      const clonedGeometry = mesh.geometry.clone();
-      const clonedMaterial = mesh.material.clone();
-      const clonedMesh = new THREE.Mesh(clonedGeometry, clonedMaterial);
-      clonedMesh.rotation.copy(mesh.rotation);
-      tempBowlGroup.add(clonedMesh);
-    });
-    tempBowlGroup.rotation.copy(glazing3DBowl.rotation);
-    tempScene.add(tempBowlGroup);
-    
-    // Add lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    tempScene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
-    directionalLight.position.set(5, 5, 5);
-    tempScene.add(directionalLight);
-    
-    // Render 60 frames (one full rotation at 60 frames)
-    if (statusbar) statusbar.textContent = 'Rendering 60 frames...';
-    
-    const totalFrames = 60;
-    for (let i = 0; i < totalFrames; i++) {
-      // Rotate bowl
-      tempBowlGroup.rotation.y += (Math.PI * 2) / totalFrames;
-      
-      // Render frame
-      tempRenderer.render(tempScene, tempCamera);
-      
-      // Get canvas image and add to GIF
-      const frameCanvas = tempRenderer.domElement;
-      gif.addFrame(frameCanvas, { delay: 50 }); // 50ms per frame = 20fps
-    }
-    
-    // When GIF is finished, save to server (no download)
-    gif.on('finished', async function(blob) {
-      try {
-        // Ensure blob has correct MIME type for GIF
-        const gifBlob = new Blob([blob], { type: 'image/gif' });
-        
-        // Convert blob to base64 for server storage
-        const reader = new FileReader();
-        reader.onload = async function() {
-          const imageData = reader.result;
-          
-          if (statusbar) statusbar.textContent = 'Saving bowl...';
-          
-          // Send to server
-          const response = await fetch('/api/paintings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ imageData, name, type: 'bowl' })
-          });
-          
-          if (!response.ok) {
-            let errorData;
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-              try {
-                errorData = await response.json();
-              } catch (e) {
-                errorData = { message: `Server error: ${response.status}` };
-              }
-            } else {
-              const text = await response.text();
-              errorData = { 
-                message: text.includes('MongoDB') || text.includes('Database') 
-                  ? 'Database not configured. Please set MONGODB_URI in Vercel environment variables.'
-                  : `Server error: ${response.status}`
-              };
-            }
-            throw new Error(errorData.message || errorData.error || `Server error: ${response.status}`);
-          }
-          
-          const result = await response.json();
-          console.log('Bowl saved:', result);
-          
-          if (statusbar) statusbar.textContent = 'Bowl saved!';
-          
-          // Reload bowl gallery after saving
-          await loadBowlGallery();
-          
-          // Reset status after 2 seconds
-          setTimeout(() => {
-            if (statusbar) statusbar.textContent = 'Ready';
-          }, 2000);
+    if (!response.ok) {
+      let errorData;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { message: `Server error: ${response.status}` };
+        }
+      } else {
+        const text = await response.text();
+        errorData = { 
+          message: text.includes('MongoDB') || text.includes('Database') 
+            ? 'Database not configured. Please set MONGODB_URI in Vercel environment variables.'
+            : `Server error: ${response.status}`
         };
-        reader.readAsDataURL(gifBlob);
-      } catch (error) {
-        console.error('Error in GIF finished callback:', error);
-        if (statusbar) statusbar.textContent = 'Error: ' + error.message;
       }
-    });
+      throw new Error(errorData.message || errorData.error || `Server error: ${response.status}`);
+    }
     
-    gif.on('error', function(error) {
-      console.error('GIF error:', error);
-      if (statusbar) statusbar.textContent = 'Error rendering GIF: ' + error.message;
-    });
+    const result = await response.json();
+    console.log('Bowl saved:', result);
     
-    // Start rendering the GIF
-    if (statusbar) statusbar.textContent = 'Encoding animation...';
-    gif.render();
+    if (statusbar) statusbar.textContent = 'Bowl saved!';
     
-    // Clean up
-    tempRenderer.dispose();
-    tempBowlGroup.children.forEach(mesh => {
-      mesh.geometry.dispose();
-      mesh.material.dispose();
-    });
+    // Reload bowl gallery after saving
+    await loadBowlGallery();
+    
+    // Reset status after 2 seconds
+    setTimeout(() => {
+      if (statusbar) statusbar.textContent = 'Ready';
+      if (saveBtn) saveBtn.disabled = false;
+    }, 2000);
     
   } catch (error) {
     console.error('Error saving bowl:', error);
     if (statusbar) statusbar.textContent = 'Error: ' + error.message;
     alert('Error saving: ' + error.message);
-  } finally {
     if (saveBtn) saveBtn.disabled = false;
   }
 }
