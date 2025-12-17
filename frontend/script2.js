@@ -444,9 +444,10 @@
   }
 
   // Add ending zone marker (soft glow on wall that appears after all tables visited)
+  // Currently hidden - will be replaced with actual wall glow once correct wall is identified
   let endingMarker;
   try {
-    // Create a circular plane for the wall glow
+    // Create a circular plane for the wall glow (hidden for now)
     const markerGeometry = new THREE.CircleGeometry(3, 32);
     const markerMaterial = new THREE.MeshBasicMaterial({
       color: 0xffff88,
@@ -455,23 +456,21 @@
       side: THREE.DoubleSide
     });
     endingMarker = new THREE.Mesh(markerGeometry, markerMaterial);
-    // Position on the wall (back right area), facing outward
     endingMarker.position.set(ENDING_ZONE.x, 3, ENDING_ZONE.z);
-    endingMarker.rotation.y = Math.PI; // Face the glow toward the player
-    endingMarker.visible = false; // Hidden until all tables visited
+    endingMarker.rotation.y = Math.PI;
+    endingMarker.visible = false; // Keep hidden - not used until wall is identified
     scene.add(endingMarker);
     
-    // Add a point light for additional glow effect
+    // Point light also hidden
     const glowLight = new THREE.PointLight(0xffff88, 1, 15);
     glowLight.position.set(ENDING_ZONE.x, 3, ENDING_ZONE.z);
     glowLight.visible = false;
     scene.add(glowLight);
     window.endingGlowLight = glowLight;
     
-    // Make it accessible for animation
     window.endingMarker = endingMarker;
     
-    console.log('Added ending zone wall glow at position:', endingMarker.position);
+    console.log('Ending zone marker created but hidden - awaiting wall identification');
   } catch (err) {
     console.error('Failed to create ending marker:', err);
   }
@@ -830,8 +829,21 @@
     
     // Bombard with stats appearing in random positions
     let delay = 0;
+    let previousElements = [];
+    
     stats.forEach((stat, index) => {
       setTimeout(() => {
+        // Fade out previous text elements
+        previousElements.forEach(el => {
+          el.style.opacity = '0';
+          setTimeout(() => {
+            if (el.parentNode) {
+              el.parentNode.removeChild(el);
+            }
+          }, 500);
+        });
+        previousElements = [];
+        
         const p = document.createElement('p');
         p.textContent = stat;
         p.style.position = 'absolute';
@@ -846,6 +858,7 @@
         p.style.top = Math.random() * 70 + 10 + '%';
         
         statsContent.appendChild(p);
+        previousElements.push(p);
         
         setTimeout(() => {
           p.style.opacity = '1';
@@ -894,7 +907,7 @@
       document.getElementById('statsOverlay').style.display = 'none';
       document.getElementById('fadeOverlay').style.opacity = '0';
       document.getElementById('fadeOverlay').style.pointerEvents = 'none';
-      endingTriggered = false; // Allow re-trigger if they go back
+      // Keep endingTriggered = true so it doesn't re-trigger
     });
   };
 
@@ -965,6 +978,8 @@
         else if (collider instanceof THREE.Object3D) {
           if (checkMeshCollision(playerBox, collider)) {
             hit = true;
+            // Debug: Log which wall mesh is being collided with
+            console.log('Wall collision detected with mesh:', collider.name || 'unnamed', 'at position:', collider.position);
             break;
           }
         }
@@ -982,15 +997,8 @@
     // Check proximity to objects for dialogue hints
     checkProximity();
 
-    // Show ending marker when all tables visited
-    if (window.endingMarker && window.tablesVisited >= TOTAL_TABLES) {
-      window.endingMarker.visible = true;
-      if (window.endingGlowLight) {
-        window.endingGlowLight.visible = true;
-      }
-      // Animate the glow (pulsing opacity)
-      window.endingMarker.material.opacity = 0.4 + Math.sin(t * 0.003) * 0.2;
-    }
+    // Ending marker kept hidden until correct wall is identified
+    // (Animation code disabled for now)
 
     camera.position.set(player.x, ROOM.EYE_HEIGHT, player.z);
     camera.rotation.order = "YXZ";
