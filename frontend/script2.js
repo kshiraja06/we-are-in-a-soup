@@ -114,15 +114,15 @@
         if (m.material) {
           m.material.roughness = 0.5;
           m.material.metalness = 0.1;
-          // Make room materials mostly white
+          // Make room materials soft yellow
           if (!m.name.toLowerCase().includes('coll_')) {
             if (Array.isArray(m.material)) {
               m.material.forEach(mat => {
-                if (mat.color) mat.color.setHex(0xffffff);
+                if (mat.color) mat.color.setHex(0xfffacd); // Soft yellow for room
                 if (mat.emissive) mat.emissive.setHex(0x000000);
               });
             } else {
-              if (m.material.color) m.material.color.setHex(0xffffff);
+              if (m.material.color) m.material.color.setHex(0xfffacd); // Soft yellow for room
               if (m.material.emissive) m.material.emissive.setHex(0x000000);
             }
           }
@@ -137,7 +137,15 @@
           // Find the ending wall for glow effect
           if (meshName === 'coll_wallinside1') {
             endingWall = m;
-            console.log('Found ending wall:', m.name);
+            // Clone material so we can modify it independently
+            if (m.material) {
+              if (Array.isArray(m.material)) {
+                m.material = m.material.map(mat => mat.clone());
+              } else {
+                m.material = m.material.clone();
+              }
+            }
+            console.log('Found ending wall:', m.name, 'Material cloned for glow effect');
           }
         }
       }
@@ -969,21 +977,24 @@
     if (endingWall && window.tablesVisited >= TOTAL_TABLES) {
       if (!window.endingWallGlowActive) {
         window.endingWallGlowActive = true;
-        // Apply soft glow to the wall
+        console.log('Activating wall glow! Tables visited:', window.tablesVisited);
+        // Apply bright glow to the wall
         if (endingWall.material) {
           if (Array.isArray(endingWall.material)) {
             endingWall.material.forEach(mat => {
-              mat.emissive = new THREE.Color(0xffff99);
-              mat.emissiveIntensity = 0.3;
+              mat.emissive = new THREE.Color(0xffff00); // Bright yellow
+              mat.emissiveIntensity = 0.8; // Higher intensity
+              mat.color = new THREE.Color(0xffff99); // Light yellow base color
             });
           } else {
-            endingWall.material.emissive = new THREE.Color(0xffff99);
-            endingWall.material.emissiveIntensity = 0.3;
+            endingWall.material.emissive = new THREE.Color(0xffff00); // Bright yellow
+            endingWall.material.emissiveIntensity = 0.8; // Higher intensity
+            endingWall.material.color = new THREE.Color(0xffff99); // Light yellow base color
           }
         }
       }
-      // Animate glow intensity
-      const glowPulse = 0.3 + Math.sin(t * 0.002) * 0.15;
+      // Animate glow intensity with more visible pulsing
+      const glowPulse = 0.6 + Math.sin(t * 0.003) * 0.3;
       if (endingWall.material) {
         if (Array.isArray(endingWall.material)) {
           endingWall.material.forEach(mat => {
