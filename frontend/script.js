@@ -933,7 +933,7 @@ async function saveBowl() {
     
     // Create camera for nice bowl view
     const tempCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
-    tempCamera.position.set(3, 2, 3);
+    tempCamera.position.set(2.5, 0.7, 3.2);
     tempCamera.lookAt(0, 0, 0);
     
     // Clone the bowl group for rendering (it contains outer and inner bowls)
