@@ -38,10 +38,10 @@
   let yaw = 0, pitch = 0;
 
   // Soft warm lighting
-  const hemisphereLight = new THREE.HemisphereLight(0xfff5e6, 0xffe0b3, 0.3); // Warm top, warmer bottom
+  const hemisphereLight = new THREE.HemisphereLight(0xffd4a3, 0xffb366, 0.3); // Warmer orange top and bottom
   scene.add(hemisphereLight);
   
-  const dir = new THREE.DirectionalLight(0xffe5cc, 0.2); // Soft warm directional light
+  const dir = new THREE.DirectionalLight(0xffc266, 0.2); // Warmer orange directional light
   dir.position.set(20, 30, 20);
   dir.castShadow = true;
   dir.shadow.mapSize.width = 2048;
@@ -55,7 +55,7 @@
   scene.add(dir);
   
   // Additional soft ambient light
-  scene.add(new THREE.AmbientLight(0xfff5e6, 0.45)); // Warm ambient
+  scene.add(new THREE.AmbientLight(0xffd4a3, 0.45)); // Warmer orange ambient
   
   // Store collider visuals for later cleanup if needed
   const colliderVisuals = [];
@@ -71,6 +71,21 @@
   let tablesVisited = 0;
   window.tablesVisited = 0; // Make globally accessible
   window.TOTAL_TABLES = TOTAL_TABLES;
+
+  // Proximity dialogue system
+  const dialogueState = {
+    claytable: { shown: false, lastShown: 0, clicked: false },
+    glazingBowl: { shown: false, lastShown: 0, clicked: false },
+    worryBox: { shown: false, lastShown: 0, clicked: false },
+    kitchenBox: { shown: false, lastShown: 0, clicked: false },
+    endingZone: { shown: false, lastShown: 0 }
+  };
+  const DIALOGUE_COOLDOWN = 20000; // 20 seconds
+  const PROXIMITY_DISTANCE = 8; // Distance to trigger dialogue
+  
+  // Ending sequence state
+  let endingTriggered = false;
+  const ENDING_ZONE = { x: 81, z: -30, radius: 5 }; // Back right area
 
   try {
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
@@ -428,6 +443,30 @@
     console.error('Failed to create kitchen box:', err);
   }
 
+  // Add ending zone marker (glowing sphere that appears after all tables visited)
+  let endingMarker;
+  try {
+    const markerGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+    const markerMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xffff00,
+      emissiveIntensity: 0.8,
+      transparent: true,
+      opacity: 0.7
+    });
+    endingMarker = new THREE.Mesh(markerGeometry, markerMaterial);
+    endingMarker.position.set(ENDING_ZONE.x, 2, ENDING_ZONE.z);
+    endingMarker.visible = false; // Hidden until all tables visited
+    scene.add(endingMarker);
+    
+    // Make it accessible for animation
+    window.endingMarker = endingMarker;
+    
+    console.log('Added ending zone marker at position:', endingMarker.position);
+  } catch (err) {
+    console.error('Failed to create ending marker:', err);
+  }
+
   // Input
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
@@ -498,6 +537,9 @@
       const intersects = raycaster.intersectObject(claytable, true);
       console.log('Claytable click test:', intersects.length > 0);
       if (intersects.length) {
+        // Mark claytable as clicked (stop showing dialogue)
+        dialogueState.claytable.clicked = true;
+        
         // Mark claytable as visited
         if (!window.claytableVisited) {
           window.claytableVisited = true;
@@ -521,6 +563,9 @@
     if (glazingBowl) {
       const intersects = raycaster.intersectObject(glazingBowl, true);
       if (intersects.length) {
+        // Mark bowl as clicked (stop showing dialogue)
+        dialogueState.glazingBowl.clicked = true;
+        
         // Mark bowl table as visited
         if (!window.bowlTableVisited) {
           window.bowlTableVisited = true;
@@ -546,6 +591,9 @@
     if (worryBox) {
       const intersects = raycaster.intersectObject(worryBox, true);
       if (intersects.length) {
+        // Mark worry box as clicked (stop showing dialogue)
+        dialogueState.worryBox.clicked = true;
+        
         // Mark worry box as visited
         if (!window.worryBoxVisited) {
           window.worryBoxVisited = true;
@@ -567,6 +615,9 @@
     if (kitchenBox) {
       const intersects = raycaster.intersectObject(kitchenBox, true);
       if (intersects.length) {
+        // Mark kitchen box as clicked (stop showing dialogue)
+        dialogueState.kitchenBox.clicked = true;
+        
         // Open kitchen setup page in new window
         window.open('./kitchen-setup.html', '_blank');
       }
@@ -655,6 +706,209 @@
     lastY = e.clientY;
   });
 
+  // Dialogue display function
+  const showDialogue = (text, duration = 1000) => {
+    const dialogue = document.getElementById('proximityDialogue');
+    if (!dialogue) return;
+    
+    dialogue.textContent = text;
+    dialogue.style.opacity = '1';
+    
+    setTimeout(() => {
+      dialogue.style.opacity = '0';
+    }, duration);
+  };
+
+  // Check proximity to objects and show dialogue
+  const checkProximity = () => {
+    if (!controlsEnabled) return;
+    
+    const now = Date.now();
+    
+    // Check claytable proximity
+    if (claytable && !dialogueState.claytable.clicked) {
+      const tablePos = new THREE.Vector3();
+      claytable.getWorldPosition(tablePos);
+      const dist = player.distanceTo(tablePos);
+      
+      if (dist < PROXIMITY_DISTANCE) {
+        if (!dialogueState.claytable.shown || (now - dialogueState.claytable.lastShown > DIALOGUE_COOLDOWN)) {
+          showDialogue("click the table to paint soup!", 1000);
+          dialogueState.claytable.shown = true;
+          dialogueState.claytable.lastShown = now;
+        }
+      }
+    }
+    
+    // Check glazing bowl proximity
+    if (glazingBowl && !dialogueState.glazingBowl.clicked) {
+      const bowlPos = new THREE.Vector3();
+      glazingBowl.getWorldPosition(bowlPos);
+      const dist = player.distanceTo(bowlPos);
+      
+      if (dist < PROXIMITY_DISTANCE) {
+        if (!dialogueState.glazingBowl.shown || (now - dialogueState.glazingBowl.lastShown > DIALOGUE_COOLDOWN)) {
+          showDialogue("click the bowl to glaze it!", 1000);
+          dialogueState.glazingBowl.shown = true;
+          dialogueState.glazingBowl.lastShown = now;
+        }
+      }
+    }
+    
+    // Check worry box proximity
+    if (worryBox && !dialogueState.worryBox.clicked) {
+      const dist = player.distanceTo(worryBox.position);
+      
+      if (dist < PROXIMITY_DISTANCE) {
+        if (!dialogueState.worryBox.shown || (now - dialogueState.worryBox.lastShown > DIALOGUE_COOLDOWN)) {
+          showDialogue("click to share your worries...", 1000);
+          dialogueState.worryBox.shown = true;
+          dialogueState.worryBox.lastShown = now;
+        }
+      }
+    }
+    
+    // Check kitchen box proximity
+    if (kitchenBox && !dialogueState.kitchenBox.clicked) {
+      const dist = player.distanceTo(kitchenBox.position);
+      
+      if (dist < PROXIMITY_DISTANCE) {
+        if (!dialogueState.kitchenBox.shown || (now - dialogueState.kitchenBox.lastShown > DIALOGUE_COOLDOWN)) {
+          showDialogue("click to learn about kitchen setup!", 1000);
+          dialogueState.kitchenBox.shown = true;
+          dialogueState.kitchenBox.lastShown = now;
+        }
+      }
+    }
+    
+    // Check ending zone proximity (only if all tables visited)
+    if (!endingTriggered && window.tablesVisited >= TOTAL_TABLES) {
+      const distToEnd = Math.sqrt(
+        Math.pow(player.x - ENDING_ZONE.x, 2) + 
+        Math.pow(player.z - ENDING_ZONE.z, 2)
+      );
+      
+      if (distToEnd < ENDING_ZONE.radius) {
+        if (!dialogueState.endingZone.shown || (now - dialogueState.endingZone.lastShown > DIALOGUE_COOLDOWN)) {
+          showDialogue("are you ready?", 1500);
+          dialogueState.endingZone.shown = true;
+          dialogueState.endingZone.lastShown = now;
+          
+          // Trigger ending sequence after short delay
+          setTimeout(() => {
+            triggerEnding();
+          }, 2000);
+        }
+      }
+    }
+  };
+
+  // Ending sequence
+  const triggerEnding = () => {
+    if (endingTriggered) return;
+    endingTriggered = true;
+    
+    // Fade to black
+    const fadeOverlay = document.getElementById('fadeOverlay');
+    if (fadeOverlay) {
+      fadeOverlay.style.pointerEvents = 'all';
+      fadeOverlay.style.opacity = '1';
+    }
+    
+    // After fade, show stats
+    setTimeout(() => {
+      showStats();
+    }, 2500);
+  };
+
+  const showStats = () => {
+    const statsOverlay = document.getElementById('statsOverlay');
+    const statsContent = document.getElementById('statsContent');
+    
+    if (!statsOverlay || !statsContent) return;
+    
+    // Placeholder dystopian stats
+    const stats = [
+      "828 million people worldwide face hunger daily.",
+      "2.3 billion people lack access to adequate food.",
+      "Over 40 conflicts are currently active around the world.",
+      "Climate change displaces 20 million people annually.",
+      "1 in 4 children live in conflict zones.",
+      "Food insecurity affects 1 in 10 people globally.",
+      "Yet, we waste 1.3 billion tons of food each year.",
+      "Community kitchens serve over 100,000 meals daily.",
+      "Small acts of kindness create ripples of change."
+    ];
+    
+    statsOverlay.style.display = 'block';
+    statsContent.innerHTML = '';
+    
+    // Bombard with stats one by one
+    let delay = 0;
+    stats.forEach((stat, index) => {
+      setTimeout(() => {
+        const p = document.createElement('p');
+        p.textContent = stat;
+        p.style.opacity = '0';
+        p.style.marginBottom = '30px';
+        p.style.transition = 'opacity 0.5s';
+        statsContent.appendChild(p);
+        
+        setTimeout(() => {
+          p.style.opacity = '1';
+        }, 50);
+        
+        // Show final popup after last stat
+        if (index === stats.length - 1) {
+          setTimeout(() => {
+            showFinalPopup();
+          }, 2000);
+        }
+      }, delay);
+      delay += 1500;
+    });
+  };
+
+  const showFinalPopup = () => {
+    const finalPopup = document.getElementById('finalPopup');
+    const suggestionText = document.getElementById('suggestionText');
+    
+    if (!finalPopup || !suggestionText) return;
+    
+    // Random suggestion
+    const suggestions = [
+      "feed a friend",
+      "help a stranger",
+      "share a meal",
+      "cook for someone",
+      "donate to a food bank",
+      "volunteer at a kitchen"
+    ];
+    
+    const randomSuggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
+    suggestionText.textContent = randomSuggestion;
+    
+    finalPopup.style.display = 'block';
+    
+    // Button handlers
+    document.getElementById('exitButton')?.addEventListener('click', () => {
+      window.close();
+      // If window.close() doesn't work (some browsers block it), redirect
+      setTimeout(() => {
+        window.location.href = 'about:blank';
+      }, 100);
+    });
+    
+    document.getElementById('roamButton')?.addEventListener('click', () => {
+      // Hide all overlays and let player roam
+      finalPopup.style.display = 'none';
+      document.getElementById('statsOverlay').style.display = 'none';
+      document.getElementById('fadeOverlay').style.opacity = '0';
+      document.getElementById('fadeOverlay').style.pointerEvents = 'none';
+      endingTriggered = false; // Allow re-trigger if they go back
+    });
+  };
+
   // Resize handling
   const resize = () => {
     const w = canvas.clientWidth || innerWidth;
@@ -734,6 +988,17 @@
       player.x = Math.max(WORLD_BOUNDS.minX + PLAYER.RADIUS, Math.min(WORLD_BOUNDS.maxX - PLAYER.RADIUS, player.x));
       player.z = Math.max(WORLD_BOUNDS.minZ + PLAYER.RADIUS, Math.min(WORLD_BOUNDS.maxZ - PLAYER.RADIUS, player.z));
       player.y = Math.max(WORLD_BOUNDS.minY + PLAYER.RADIUS, Math.min(WORLD_BOUNDS.maxY - PLAYER.RADIUS, player.y));
+    }
+
+    // Check proximity to objects for dialogue hints
+    checkProximity();
+
+    // Show ending marker when all tables visited
+    if (window.endingMarker && window.tablesVisited >= TOTAL_TABLES) {
+      window.endingMarker.visible = true;
+      // Animate the marker (bobbing and rotating)
+      window.endingMarker.position.y = 2 + Math.sin(t * 0.002) * 0.5;
+      window.endingMarker.rotation.y += 0.02;
     }
 
     camera.position.set(player.x, ROOM.EYE_HEIGHT, player.z);

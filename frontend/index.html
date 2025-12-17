@@ -31,6 +31,9 @@
 <body>
   <canvas id="canvas"></canvas>
 
+  <!-- Proximity Dialogue Tooltip -->
+  <div id="proximityDialogue" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px 30px; border-radius: 10px; font-size: 1.2em; font-style: italic; pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 5000; text-align: center; max-width: 400px;"></div>
+
   <!-- Table Visit Progress Overlay -->
   <div id="tableProgressOverlay" class="table-progress-overlay">
     <div class="progress-label">Table Visits</div>
@@ -38,6 +41,27 @@
       <div id="tableProgressBar" class="progress-fill-small" style="width: 0%"></div>
     </div>
     <div id="tableProgressText" class="progress-text-small">0 / 2 tables visited</div>
+  </div>
+
+  <!-- Fade to Black Overlay -->
+  <div id="fadeOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; opacity: 0; pointer-events: none; z-index: 9000; transition: opacity 2s;"></div>
+
+  <!-- Stats Bombardment Overlay -->
+  <div id="statsOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; color: white; display: none; z-index: 9500; overflow-y: auto; padding: 40px;">
+    <div id="statsContent" style="max-width: 800px; margin: 0 auto; font-size: 1.5em; line-height: 1.8;"></div>
+  </div>
+
+  <!-- Final Suggestion Popup -->
+  <div id="finalPopup" class="intro-overlay" style="display: none;">
+    <div class="intro-content">
+      <div class="intro-inner">
+        <h1 class="intro-title" style="font-size: 2em; margin-bottom: 30px;" id="suggestionText">feed a friend</h1>
+        <div style="display: flex; gap: 20px; justify-content: center; margin-top: 30px;">
+          <button id="exitButton" class="start-button" style="background: #d9534f;">exit website</button>
+          <button id="roamButton" class="start-button">roam around</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Intro Overlay -->

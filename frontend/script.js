@@ -209,8 +209,10 @@ async function loadGallery() {
       return;
     }
     
-    console.log('Adding', paintings.length, 'paintings to initial gallery');
-    paintings.forEach((painting, idx) => {
+    // Filter to only show soup paintings (not bowls)
+    const soupPaintings = paintings.filter(p => !p.type || p.type !== 'bowl');
+    console.log('Adding', soupPaintings.length, 'soup paintings to initial gallery');
+    soupPaintings.forEach((painting, idx) => {
       const box = document.createElement('div');
       box.className = 'thumb';
       const img = document.createElement('img');
@@ -218,7 +220,7 @@ async function loadGallery() {
       img.alt = painting.name;
       const nameEl = document.createElement('div');
       nameEl.className = 'thumb-name';
-      nameEl.textContent = painting.name + (painting.type === 'bowl' ? ' (Bowl)' : '');
+      nameEl.textContent = painting.name;
       const downloadBtn = document.createElement('button');
       downloadBtn.className = 'tool';
       downloadBtn.textContent = 'Download';
@@ -317,8 +319,10 @@ async function openGallery(){
       return;
     }
     
-    console.log('Adding', paintings.length, 'paintings to gallery');
-    paintings.forEach((painting, index) => {
+    // Filter to only show soup paintings (not bowls)
+    const soupPaintings = paintings.filter(p => !p.type || p.type !== 'bowl');
+    console.log('Adding', soupPaintings.length, 'soup paintings to gallery');
+    soupPaintings.forEach((painting, index) => {
       console.log('Adding painting', index, ':', painting.name);
       const box=document.createElement("div"); 
       box.className="thumb";
@@ -327,7 +331,7 @@ async function openGallery(){
       img.alt=painting.name;
       const nameEl=document.createElement("div");
       nameEl.className="thumb-name";
-      nameEl.textContent=painting.name + (painting.type === 'bowl' ? ' (Bowl)' : '');
+      nameEl.textContent=painting.name;
       const downloadBtn=document.createElement("button");
       downloadBtn.className="tool";
       downloadBtn.textContent="Download";
@@ -925,6 +929,9 @@ async function saveBowl() {
   
   try {
     if (statusbar) statusbar.textContent = 'Saving bowl...';
+    
+    // Ensure the scene is rendered before capturing
+    glazing3DRenderer.render(glazing3DScene, glazing3DCamera);
     
     // Render current bowl to canvas using the glazing renderer
     const canvas = glazing3DRenderer.domElement;
