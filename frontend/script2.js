@@ -443,37 +443,28 @@
     console.error('Failed to create kitchen box:', err);
   }
 
-  // Create a large visible glowing plane instead of modifying wall material
-  // This will be positioned in front of the wall on the left side
-  const glowPlaneGeometry = new THREE.PlaneGeometry(8, 10);
+  // Create a subtle glowing plane on the wall surface
+  // Match wall dimensions and position it directly on the wall
+  const glowPlaneGeometry = new THREE.PlaneGeometry(15, 12); // Larger to match wall section
   const glowPlaneMaterial = new THREE.MeshBasicMaterial({
-    color: 0xffff00,
+    color: 0xffffaa, // Softer yellow
     transparent: true,
     opacity: 0,
     side: THREE.DoubleSide
   });
   const glowPlane = new THREE.Mesh(glowPlaneGeometry, glowPlaneMaterial);
   
-  // Position the glow plane on the left side of the ending zone
-  glowPlane.position.set(ENDING_ZONE.x - 5, 3, ENDING_ZONE.z);
-  glowPlane.rotation.y = Math.PI / 2; // Face the plane toward the player
+  // Position directly on the wall surface (adjust Z to be flush with wall)
+  glowPlane.position.set(ENDING_ZONE.x, 4, ENDING_ZONE.z + 0.1);
+  glowPlane.rotation.y = Math.PI / 2; // Face outward from wall
   scene.add(glowPlane);
   window.glowPlane = glowPlane;
   
-  // Add multiple point lights for strong glow effect
-  const glowLight1 = new THREE.PointLight(0xffff00, 0, 30);
-  glowLight1.position.set(ENDING_ZONE.x - 5, 3, ENDING_ZONE.z);
-  scene.add(glowLight1);
-  
-  const glowLight2 = new THREE.PointLight(0xffff00, 0, 30);
-  glowLight2.position.set(ENDING_ZONE.x - 5, 5, ENDING_ZONE.z);
-  scene.add(glowLight2);
-  
-  const glowLight3 = new THREE.PointLight(0xffff00, 0, 30);
-  glowLight3.position.set(ENDING_ZONE.x - 5, 1, ENDING_ZONE.z);
-  scene.add(glowLight3);
-  
-  window.endingGlowLights = [glowLight1, glowLight2, glowLight3];
+  // Single subtle point light for soft glow
+  const glowLight = new THREE.PointLight(0xffffaa, 0, 20);
+  glowLight.position.set(ENDING_ZONE.x, 4, ENDING_ZONE.z);
+  scene.add(glowLight);
+  window.endingGlowLight = glowLight;
   
   console.log('Wall glow plane created at position:', glowPlane.position);
 
@@ -1001,15 +992,13 @@
 
     // Activate wall glow when all tables visited
     if (window.glowPlane && window.tablesVisited >= TOTAL_TABLES) {
-      // Animate the glow plane opacity (pulsing)
-      const pulseIntensity = 0.6 + Math.sin(t * 0.003) * 0.3;
+      // Subtle pulsing opacity
+      const pulseIntensity = 0.15 + Math.sin(t * 0.003) * 0.1;
       window.glowPlane.material.opacity = pulseIntensity;
       
-      // Activate all point lights with strong pulsing
-      if (window.endingGlowLights) {
-        window.endingGlowLights.forEach(light => {
-          light.intensity = pulseIntensity * 8;
-        });
+      // Subtle point light
+      if (window.endingGlowLight) {
+        window.endingGlowLight.intensity = pulseIntensity * 3;
       }
     }
 
