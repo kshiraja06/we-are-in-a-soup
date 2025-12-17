@@ -932,11 +932,17 @@ async function saveBowl() {
     tempCamera.position.set(3, 2, 3);
     tempCamera.lookAt(0, 0, 0);
     
-    // Clone the bowl for rendering
-    const bowlGeometry = glazing3DBowl.geometry.clone();
-    const bowlMaterial = glazing3DBowl.material.clone();
-    const tempBowl = new THREE.Mesh(bowlGeometry, bowlMaterial);
-    tempScene.add(tempBowl);
+    // Clone the bowl group for rendering (it contains outer and inner bowls)
+    const tempBowlGroup = new THREE.Group();
+    glazing3DBowl.children.forEach(mesh => {
+      const clonedGeometry = mesh.geometry.clone();
+      const clonedMaterial = mesh.material.clone();
+      const clonedMesh = new THREE.Mesh(clonedGeometry, clonedMaterial);
+      clonedMesh.rotation.copy(mesh.rotation);
+      tempBowlGroup.add(clonedMesh);
+    });
+    tempBowlGroup.rotation.copy(glazing3DBowl.rotation);
+    tempScene.add(tempBowlGroup);
     
     // Add lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -953,8 +959,10 @@ async function saveBowl() {
     
     // Clean up
     tempRenderer.dispose();
-    tempBowl.geometry.dispose();
-    tempBowl.material.dispose();
+    tempBowlGroup.children.forEach(mesh => {
+      mesh.geometry.dispose();
+      mesh.material.dispose();
+    });
     
     // Update status
     if (statusbar) statusbar.textContent = 'Saving bowl...';
