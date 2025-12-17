@@ -934,7 +934,7 @@ async function saveBowl() {
       quality: 10,
       width: 512,
       height: 512,
-      workerScript: 'https://unpkg.com/gif.js@0.2.0/dist/gif.worker.js'
+      workerScript: './gif.worker.js'
     });
 
     // Create a temporary canvas for rendering
