@@ -988,10 +988,13 @@ async function saveBowl() {
       gif.addFrame(frameCanvas, { delay: 50 }); // 50ms per frame = 20fps
     }
     
-    // When GIF is finished, save to server (don't download)
+    // When GIF is finished, save to server (no download)
     gif.on('finished', async function(blob) {
       try {
-        // Convert blob to base64 for server storage (thumbnail)
+        // Ensure blob has correct MIME type for GIF
+        const gifBlob = new Blob([blob], { type: 'image/gif' });
+        
+        // Convert blob to base64 for server storage
         const reader = new FileReader();
         reader.onload = async function() {
           const imageData = reader.result;
@@ -1038,7 +1041,7 @@ async function saveBowl() {
             if (statusbar) statusbar.textContent = 'Ready';
           }, 2000);
         };
-        reader.readAsDataURL(blob);
+        reader.readAsDataURL(gifBlob);
       } catch (error) {
         console.error('Error in GIF finished callback:', error);
         if (statusbar) statusbar.textContent = 'Error: ' + error.message;
