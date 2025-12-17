@@ -38,10 +38,10 @@
   let yaw = 0, pitch = 0;
 
   // Soft warm lighting
-  const hemisphereLight = new THREE.HemisphereLight(0xffd4a3, 0xffb366, 0.3); // Warmer orange top and bottom
+  const hemisphereLight = new THREE.HemisphereLight(0xfffacd, 0xfff8dc, 0.4); // Soft yellow top and bottom
   scene.add(hemisphereLight);
   
-  const dir = new THREE.DirectionalLight(0xffc266, 0.2); // Warmer orange directional light
+  const dir = new THREE.DirectionalLight(0xfffacd, 0.25); // Soft yellow directional light
   dir.position.set(20, 30, 20);
   dir.castShadow = true;
   dir.shadow.mapSize.width = 2048;
@@ -55,7 +55,7 @@
   scene.add(dir);
   
   // Additional soft ambient light
-  scene.add(new THREE.AmbientLight(0xffd4a3, 0.45)); // Warmer orange ambient
+  scene.add(new THREE.AmbientLight(0xfffacd, 0.5)); // Soft yellow ambient
   
   // Store collider visuals for later cleanup if needed
   const colliderVisuals = [];
@@ -66,8 +66,8 @@
   let glazingBowl; // Placeholder bowl for glazing
   let roomCenter = new THREE.Vector3(0, 0, 0);
   
-  // Table visit tracking - 3 stations: bowl glazing, claytable soup painting, and worry box
-  const TOTAL_TABLES = 3;
+  // Table visit tracking - 4 stations: bowl glazing, claytable soup painting, worry box, and kitchen setup
+  const TOTAL_TABLES = 4;
   let tablesVisited = 0;
   window.tablesVisited = 0; // Make globally accessible
   window.TOTAL_TABLES = TOTAL_TABLES;
@@ -85,7 +85,7 @@
   
   // Ending sequence state
   let endingTriggered = false;
-  const ENDING_ZONE = { x: 81, z: -30, radius: 5 }; // Back right area
+  const ENDING_ZONE = { x: 60, z: -30, radius: 5 }; // Back area, more to the left
 
   try {
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
@@ -133,6 +133,12 @@
         if (meshName.includes('coll_')) {
           meshColliders.push(m); // Store the actual mesh, not just bounding box
           console.log('Found collision mesh:', m.name);
+          
+          // Find the ending wall for glow effect
+          if (meshName === 'coll_wallinside1') {
+            endingWall = m;
+            console.log('Found ending wall:', m.name);
+          }
         }
       }
     });
@@ -219,7 +225,7 @@
     const floorSize = 120; // Smaller floor size
     const floorGeometry = new THREE.PlaneGeometry(floorSize, floorSize);
     const floorMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0xf5f5f5, // Light gray floor
+      color: 0xa8c5a0, // Muddy pastel green floor
       roughness: 0.8,
       metalness: 0.1
     });
@@ -431,8 +437,8 @@
     });
     kitchenBox = new THREE.Mesh(kitchenBoxGeometry, kitchenBoxMaterial);
     
-    // Position kitchen box near the other interactive objects
-    kitchenBox.position.set(61, 1, 5);
+    // Position kitchen box more back and to the right
+    kitchenBox.position.set(85, 1, -35);
     kitchenBox.castShadow = true;
     kitchenBox.receiveShadow = true;
     
@@ -443,29 +449,9 @@
     console.error('Failed to create kitchen box:', err);
   }
 
-  // Add ending zone marker (glowing sphere that appears after all tables visited)
-  let endingMarker;
-  try {
-    const markerGeometry = new THREE.SphereGeometry(1.5, 32, 32);
-    const markerMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      emissive: 0xffff00,
-      emissiveIntensity: 0.8,
-      transparent: true,
-      opacity: 0.7
-    });
-    endingMarker = new THREE.Mesh(markerGeometry, markerMaterial);
-    endingMarker.position.set(ENDING_ZONE.x, 2, ENDING_ZONE.z);
-    endingMarker.visible = false; // Hidden until all tables visited
-    scene.add(endingMarker);
-    
-    // Make it accessible for animation
-    window.endingMarker = endingMarker;
-    
-    console.log('Added ending zone marker at position:', endingMarker.position);
-  } catch (err) {
-    console.error('Failed to create ending marker:', err);
-  }
+  // Store reference to wall for ending glow effect
+  let endingWall = null;
+  window.endingWallGlowActive = false;
 
   // Input
   const raycaster = new THREE.Raycaster();
@@ -618,6 +604,15 @@
         // Mark kitchen box as clicked (stop showing dialogue)
         dialogueState.kitchenBox.clicked = true;
         
+        // Mark kitchen box as visited
+        if (!window.kitchenBoxVisited) {
+          window.kitchenBoxVisited = true;
+          window.tablesVisited = (window.tablesVisited || 0) + 1;
+          if (typeof window.updateTableProgress === 'function') {
+            window.updateTableProgress();
+          }
+        }
+        
         // Open kitchen setup page in new window
         window.open('./kitchen-setup.html', '_blank');
       }
@@ -725,22 +720,7 @@
     
     const now = Date.now();
     
-    // Check claytable proximity
-    if (claytable && !dialogueState.claytable.clicked) {
-      const tablePos = new THREE.Vector3();
-      claytable.getWorldPosition(tablePos);
-      const dist = player.distanceTo(tablePos);
-      
-      if (dist < PROXIMITY_DISTANCE) {
-        if (!dialogueState.claytable.shown || (now - dialogueState.claytable.lastShown > DIALOGUE_COOLDOWN)) {
-          showDialogue("click the table to paint soup!", 1000);
-          dialogueState.claytable.shown = true;
-          dialogueState.claytable.lastShown = now;
-        }
-      }
-    }
-    
-    // Check glazing bowl proximity
+    // Only show dialogue for glazing bowl
     if (glazingBowl && !dialogueState.glazingBowl.clicked) {
       const bowlPos = new THREE.Vector3();
       glazingBowl.getWorldPosition(bowlPos);
@@ -748,35 +728,9 @@
       
       if (dist < PROXIMITY_DISTANCE) {
         if (!dialogueState.glazingBowl.shown || (now - dialogueState.glazingBowl.lastShown > DIALOGUE_COOLDOWN)) {
-          showDialogue("click the bowl to glaze it!", 1000);
+          showDialogue("click here!", 1000);
           dialogueState.glazingBowl.shown = true;
           dialogueState.glazingBowl.lastShown = now;
-        }
-      }
-    }
-    
-    // Check worry box proximity
-    if (worryBox && !dialogueState.worryBox.clicked) {
-      const dist = player.distanceTo(worryBox.position);
-      
-      if (dist < PROXIMITY_DISTANCE) {
-        if (!dialogueState.worryBox.shown || (now - dialogueState.worryBox.lastShown > DIALOGUE_COOLDOWN)) {
-          showDialogue("click to share your worries...", 1000);
-          dialogueState.worryBox.shown = true;
-          dialogueState.worryBox.lastShown = now;
-        }
-      }
-    }
-    
-    // Check kitchen box proximity
-    if (kitchenBox && !dialogueState.kitchenBox.clicked) {
-      const dist = player.distanceTo(kitchenBox.position);
-      
-      if (dist < PROXIMITY_DISTANCE) {
-        if (!dialogueState.kitchenBox.shown || (now - dialogueState.kitchenBox.lastShown > DIALOGUE_COOLDOWN)) {
-          showDialogue("click to learn about kitchen setup!", 1000);
-          dialogueState.kitchenBox.shown = true;
-          dialogueState.kitchenBox.lastShown = now;
         }
       }
     }
@@ -823,36 +777,50 @@
 
   const showStats = () => {
     const statsOverlay = document.getElementById('statsOverlay');
-    const statsContent = document.getElementById('statsContent');
     
-    if (!statsOverlay || !statsContent) return;
+    if (!statsOverlay) return;
     
-    // Placeholder dystopian stats
+    // Stats from the image
     const stats = [
-      "828 million people worldwide face hunger daily.",
-      "2.3 billion people lack access to adequate food.",
-      "Over 40 conflicts are currently active around the world.",
-      "Climate change displaces 20 million people annually.",
-      "1 in 4 children live in conflict zones.",
-      "Food insecurity affects 1 in 10 people globally.",
-      "Yet, we waste 1.3 billion tons of food each year.",
-      "Community kitchens serve over 100,000 meals daily.",
-      "Small acts of kindness create ripples of change."
+      "WE PRODUCE ENOUGH FOOD TO FEED EVERYONE, YET MILLIONS STARVE",
+      "TRUTH TRAVELS SLOWER THAN LIES",
+      "EVERY 2 SECONDS, SOMEONE IS DISPLACED",
+      "LONELINESS IS NOW A GLOBAL EPIDEMIC",
+      "HISTORY REMEMBERS POWER, NOT PEOPLE",
+      "CHILDREN INHERIT CRISES THEY DIDN'T CREATE",
+      "MORE PEOPLE HAVE PHONES THAN CLEAN WATER",
+      "WARS ARE DRAWN BY THE VICTORIOUS",
+      "PEACE LASTS SHORTER THAN THE WARS THAT CREATE IT",
+      "MOST OF THE INTERNET IS DESIGNED TO KEEP YOU SCROLLING, NOT THINKING",
+      "MOST HUMAN SUFFERING IS PREVENTABLE—AND IT STILL HAPPENS",
+      "MORE PLASTIC ENTERS THE OCEAN THAN DATA ENTERS YOUR PHONE",
+      "THE POOREST PAY THE HIGHEST PRICE FOR THE CLIMATE CRISIS",
+      "SOMEONE SOMEWHERE IS MAKING YOUR CLOTHES FOR LESS THAN A LIVING WAGE"
     ];
     
     statsOverlay.style.display = 'block';
-    statsContent.innerHTML = '';
+    statsOverlay.innerHTML = ''; // Clear content
     
-    // Bombard with stats one by one
+    // Bombard with stats appearing in random positions
     let delay = 0;
     stats.forEach((stat, index) => {
       setTimeout(() => {
         const p = document.createElement('p');
         p.textContent = stat;
+        p.style.position = 'absolute';
+        p.style.color = '#ff6b6b';
+        p.style.fontSize = '1.2em';
+        p.style.fontWeight = 'bold';
         p.style.opacity = '0';
-        p.style.marginBottom = '30px';
         p.style.transition = 'opacity 0.5s';
-        statsContent.appendChild(p);
+        p.style.maxWidth = '400px';
+        p.style.padding = '10px';
+        
+        // Random position on screen
+        p.style.left = Math.random() * 60 + 10 + '%';
+        p.style.top = Math.random() * 70 + 10 + '%';
+        
+        statsOverlay.appendChild(p);
         
         setTimeout(() => {
           p.style.opacity = '1';
@@ -865,7 +833,7 @@
           }, 2000);
         }
       }, delay);
-      delay += 1500;
+      delay += 800; // Faster bombardment
     });
   };
 
@@ -875,20 +843,24 @@
     
     if (!finalPopup || !suggestionText) return;
     
-    // Random suggestion
+    // Only 2 suggestions
     const suggestions = [
       "feed a friend",
-      "help a stranger",
-      "share a meal",
-      "cook for someone",
-      "donate to a food bank",
-      "volunteer at a kitchen"
+      "help a stranger"
     ];
     
     const randomSuggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
     suggestionText.textContent = randomSuggestion;
     
-    finalPopup.style.display = 'block';
+    // Ensure popup is centered
+    finalPopup.style.display = 'flex';
+    finalPopup.style.position = 'fixed';
+    finalPopup.style.top = '0';
+    finalPopup.style.left = '0';
+    finalPopup.style.width = '100%';
+    finalPopup.style.height = '100%';
+    finalPopup.style.alignItems = 'center';
+    finalPopup.style.justifyContent = 'center';
     
     // Button handlers
     document.getElementById('exitButton')?.addEventListener('click', () => {
@@ -993,12 +965,34 @@
     // Check proximity to objects for dialogue hints
     checkProximity();
 
-    // Show ending marker when all tables visited
-    if (window.endingMarker && window.tablesVisited >= TOTAL_TABLES) {
-      window.endingMarker.visible = true;
-      // Animate the marker (bobbing and rotating)
-      window.endingMarker.position.y = 2 + Math.sin(t * 0.002) * 0.5;
-      window.endingMarker.rotation.y += 0.02;
+    // Apply glow to ending wall when all tables visited
+    if (endingWall && window.tablesVisited >= TOTAL_TABLES) {
+      if (!window.endingWallGlowActive) {
+        window.endingWallGlowActive = true;
+        // Apply soft glow to the wall
+        if (endingWall.material) {
+          if (Array.isArray(endingWall.material)) {
+            endingWall.material.forEach(mat => {
+              mat.emissive = new THREE.Color(0xffff99);
+              mat.emissiveIntensity = 0.3;
+            });
+          } else {
+            endingWall.material.emissive = new THREE.Color(0xffff99);
+            endingWall.material.emissiveIntensity = 0.3;
+          }
+        }
+      }
+      // Animate glow intensity
+      const glowPulse = 0.3 + Math.sin(t * 0.002) * 0.15;
+      if (endingWall.material) {
+        if (Array.isArray(endingWall.material)) {
+          endingWall.material.forEach(mat => {
+            mat.emissiveIntensity = glowPulse;
+          });
+        } else {
+          endingWall.material.emissiveIntensity = glowPulse;
+        }
+      }
     }
 
     camera.position.set(player.x, ROOM.EYE_HEIGHT, player.z);
