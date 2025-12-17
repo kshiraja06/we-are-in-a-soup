@@ -443,34 +443,24 @@
     console.error('Failed to create kitchen box:', err);
   }
 
-  // Store reference to the wall mesh that will glow
-  let targetWallMesh = null;
+  // Create a large visible glowing plane instead of modifying wall material
+  // This will be positioned in front of the wall on the left side
+  const glowPlaneGeometry = new THREE.PlaneGeometry(8, 10);
+  const glowPlaneMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffff00,
+    transparent: true,
+    opacity: 0,
+    side: THREE.DoubleSide
+  });
+  const glowPlane = new THREE.Mesh(glowPlaneGeometry, glowPlaneMaterial);
   
-  // Find "coll wall inside 2" mesh and apply glow material to it
-  if (model) {
-    model.traverse(m => {
-      if (m.isMesh && m.name && m.name.toLowerCase().includes('coll wall inside 2')) {
-        targetWallMesh = m;
-        console.log('Found target wall mesh for glow:', m.name);
-        
-        // Store original material to restore later if needed
-        m.userData.originalMaterial = m.material;
-        
-        // Create emissive material for glow effect (initially not glowing)
-        m.userData.glowMaterial = new THREE.MeshStandardMaterial({
-          color: 0xffff00,
-          emissive: 0xffff00,
-          emissiveIntensity: 0,
-          transparent: false,
-          side: THREE.DoubleSide
-        });
-        
-        window.targetWallMesh = m;
-      }
-    });
-  }
+  // Position the glow plane on the left side of the ending zone
+  glowPlane.position.set(ENDING_ZONE.x - 5, 3, ENDING_ZONE.z);
+  glowPlane.rotation.y = Math.PI / 2; // Face the plane toward the player
+  scene.add(glowPlane);
+  window.glowPlane = glowPlane;
   
-  // Add multiple point lights for strong glow effect (positioned on left side of wall)
+  // Add multiple point lights for strong glow effect
   const glowLight1 = new THREE.PointLight(0xffff00, 0, 30);
   glowLight1.position.set(ENDING_ZONE.x - 5, 3, ENDING_ZONE.z);
   scene.add(glowLight1);
@@ -485,7 +475,7 @@
   
   window.endingGlowLights = [glowLight1, glowLight2, glowLight3];
   
-  console.log('Wall glow system initialized for "coll wall inside 2"');
+  console.log('Wall glow plane created at position:', glowPlane.position);
 
   // Input
   const raycaster = new THREE.Raycaster();
@@ -1010,21 +1000,15 @@
     checkProximity();
 
     // Activate wall glow when all tables visited
-    if (window.targetWallMesh && window.tablesVisited >= TOTAL_TABLES) {
-      // Switch to glow material
-      if (window.targetWallMesh.material !== window.targetWallMesh.userData.glowMaterial) {
-        window.targetWallMesh.material = window.targetWallMesh.userData.glowMaterial;
-        console.log('Wall glow activated!');
-      }
-      
-      // Animate the glow (much stronger pulsing emissive intensity)
-      const pulseIntensity = 2.0 + Math.sin(t * 0.003) * 1.0;
-      window.targetWallMesh.material.emissiveIntensity = pulseIntensity;
+    if (window.glowPlane && window.tablesVisited >= TOTAL_TABLES) {
+      // Animate the glow plane opacity (pulsing)
+      const pulseIntensity = 0.6 + Math.sin(t * 0.003) * 0.3;
+      window.glowPlane.material.opacity = pulseIntensity;
       
       // Activate all point lights with strong pulsing
       if (window.endingGlowLights) {
         window.endingGlowLights.forEach(light => {
-          light.intensity = pulseIntensity * 5;
+          light.intensity = pulseIntensity * 8;
         });
       }
     }
