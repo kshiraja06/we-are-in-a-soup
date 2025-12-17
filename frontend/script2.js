@@ -443,26 +443,35 @@
     console.error('Failed to create kitchen box:', err);
   }
 
-  // Add ending zone marker (glowing sphere that appears after all tables visited)
+  // Add ending zone marker (soft glow on wall that appears after all tables visited)
   let endingMarker;
   try {
-    const markerGeometry = new THREE.SphereGeometry(1.5, 32, 32);
-    const markerMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      emissive: 0xffff00,
-      emissiveIntensity: 0.8,
+    // Create a circular plane for the wall glow
+    const markerGeometry = new THREE.CircleGeometry(3, 32);
+    const markerMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffff88,
       transparent: true,
-      opacity: 0.7
+      opacity: 0.6,
+      side: THREE.DoubleSide
     });
     endingMarker = new THREE.Mesh(markerGeometry, markerMaterial);
-    endingMarker.position.set(ENDING_ZONE.x, 2, ENDING_ZONE.z);
+    // Position on the wall (back right area), facing outward
+    endingMarker.position.set(ENDING_ZONE.x, 3, ENDING_ZONE.z);
+    endingMarker.rotation.y = Math.PI; // Face the glow toward the player
     endingMarker.visible = false; // Hidden until all tables visited
     scene.add(endingMarker);
+    
+    // Add a point light for additional glow effect
+    const glowLight = new THREE.PointLight(0xffff88, 1, 15);
+    glowLight.position.set(ENDING_ZONE.x, 3, ENDING_ZONE.z);
+    glowLight.visible = false;
+    scene.add(glowLight);
+    window.endingGlowLight = glowLight;
     
     // Make it accessible for animation
     window.endingMarker = endingMarker;
     
-    console.log('Added ending zone marker at position:', endingMarker.position);
+    console.log('Added ending zone wall glow at position:', endingMarker.position);
   } catch (err) {
     console.error('Failed to create ending marker:', err);
   }
@@ -742,7 +751,7 @@
       
       if (dist < PROXIMITY_DISTANCE) {
         if (!dialogueState.glazingBowl.shown || (now - dialogueState.glazingBowl.lastShown > DIALOGUE_COOLDOWN)) {
-          showDialogue("click here!", 1000);
+          showDialogue("click the bowl!", 1000);
           dialogueState.glazingBowl.shown = true;
           dialogueState.glazingBowl.lastShown = now;
         }
@@ -795,31 +804,47 @@
     
     if (!statsOverlay || !statsContent) return;
     
-    // Placeholder dystopian stats
+    // Stats from the "Soup for Thought" image
     const stats = [
-      "828 million people worldwide face hunger daily.",
-      "2.3 billion people lack access to adequate food.",
-      "Over 40 conflicts are currently active around the world.",
-      "Climate change displaces 20 million people annually.",
-      "1 in 4 children live in conflict zones.",
-      "Food insecurity affects 1 in 10 people globally.",
-      "Yet, we waste 1.3 billion tons of food each year.",
-      "Community kitchens serve over 100,000 meals daily.",
-      "Small acts of kindness create ripples of change."
+      "we produce enough food to feed everyone, yet millions starve",
+      "truth travels slower than lies",
+      "every 2 seconds, someone is displaced",
+      "loneliness is now a global epidemic",
+      "history remembers power, not people",
+      "children inherit crises they didn't create",
+      "more people have phones than clean water",
+      "maps are drawn by the victorious",
+      "peace lasts shorter than the wars that create it",
+      "most of the internet is designed to keep you scrolling, not thinking",
+      "the poorest pay the highest price for the climate crisis",
+      "more plastic enters the ocean than data enters your phone",
+      "most human suffering is preventable—and it still happens",
+      "someone somewhere is making your clothes for less than a living wage"
     ];
     
     statsOverlay.style.display = 'block';
     statsContent.innerHTML = '';
+    statsContent.style.position = 'relative';
+    statsContent.style.width = '100%';
+    statsContent.style.height = '100%';
     
-    // Bombard with stats one by one
+    // Bombard with stats appearing in random positions
     let delay = 0;
     stats.forEach((stat, index) => {
       setTimeout(() => {
         const p = document.createElement('p');
         p.textContent = stat;
+        p.style.position = 'absolute';
         p.style.opacity = '0';
-        p.style.marginBottom = '30px';
         p.style.transition = 'opacity 0.5s';
+        p.style.fontSize = '1.2em';
+        p.style.maxWidth = '400px';
+        p.style.padding = '10px';
+        
+        // Random position on screen
+        p.style.left = Math.random() * 60 + 10 + '%';
+        p.style.top = Math.random() * 70 + 10 + '%';
+        
         statsContent.appendChild(p);
         
         setTimeout(() => {
@@ -833,7 +858,7 @@
           }, 2000);
         }
       }, delay);
-      delay += 1500;
+      delay += 1200;
     });
   };
 
@@ -843,20 +868,16 @@
     
     if (!finalPopup || !suggestionText) return;
     
-    // Random suggestion
+    // Random suggestion - only two options
     const suggestions = [
       "feed a friend",
-      "help a stranger",
-      "share a meal",
-      "cook for someone",
-      "donate to a food bank",
-      "volunteer at a kitchen"
+      "help a stranger"
     ];
     
     const randomSuggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
     suggestionText.textContent = randomSuggestion;
     
-    finalPopup.style.display = 'block';
+    finalPopup.style.display = 'flex';
     
     // Button handlers
     document.getElementById('exitButton')?.addEventListener('click', () => {
@@ -964,9 +985,11 @@
     // Show ending marker when all tables visited
     if (window.endingMarker && window.tablesVisited >= TOTAL_TABLES) {
       window.endingMarker.visible = true;
-      // Animate the marker (bobbing and rotating)
-      window.endingMarker.position.y = 2 + Math.sin(t * 0.002) * 0.5;
-      window.endingMarker.rotation.y += 0.02;
+      if (window.endingGlowLight) {
+        window.endingGlowLight.visible = true;
+      }
+      // Animate the glow (pulsing opacity)
+      window.endingMarker.material.opacity = 0.4 + Math.sin(t * 0.003) * 0.2;
     }
 
     camera.position.set(player.x, ROOM.EYE_HEIGHT, player.z);
