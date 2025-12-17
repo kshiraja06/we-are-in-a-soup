@@ -988,18 +988,9 @@ async function saveBowl() {
       gif.addFrame(frameCanvas, { delay: 50 }); // 50ms per frame = 20fps
     }
     
-    // When GIF is finished, download it and save to server
+    // When GIF is finished, save to server (don't download)
     gif.on('finished', async function(blob) {
       try {
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.download = name + '.gif';
-        link.click();
-        URL.revokeObjectURL(url);
-        
-        console.log('Bowl GIF downloaded');
-        
         // Convert blob to base64 for server storage (thumbnail)
         const reader = new FileReader();
         reader.onload = async function() {
