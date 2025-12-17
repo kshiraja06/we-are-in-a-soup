@@ -912,7 +912,7 @@ async function saveBowl() {
   const saveBtn = document.getElementById("glazingSaveBtn");
   
   // Update status
-  if (statusbar) statusbar.textContent = 'Rendering bowl...';
+  if (statusbar) statusbar.textContent = 'Rendering bowl animation...';
   if (saveBtn) saveBtn.disabled = true;
   
   const name = prompt('Name your bowl:');
@@ -924,7 +924,16 @@ async function saveBowl() {
   }
   
   try {
-    // Create a temporary canvas for rendering the 3D bowl
+    // Create GIF of rotating bowl using gif.js with local worker
+    const gif = new GIF({
+      workers: 2,
+      quality: 10,
+      width: 512,
+      height: 512,
+      workerScript: './gif.worker.js'
+    });
+
+    // Create a temporary canvas for rendering
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = 512;
     tempCanvas.height = 512;
@@ -959,17 +968,81 @@ async function saveBowl() {
     directionalLight.position.set(5, 5, 5);
     tempScene.add(directionalLight);
     
-    // Render the bowl
-    tempRenderer.render(tempScene, tempCamera);
+    // Render 60 frames (one full rotation at 60 frames)
+    if (statusbar) statusbar.textContent = 'Encoding animation...';
     
-    // Get canvas image data
-    const imageData = tempCanvas.toDataURL('image/png');
+    const totalFrames = 60;
+    for (let i = 0; i < totalFrames; i++) {
+      // Rotate bowl
+      tempBowlGroup.rotation.y += (Math.PI * 2) / totalFrames;
+      
+      // Render frame
+      tempRenderer.render(tempScene, tempCamera);
+      
+      // Get canvas image and add to GIF
+      const frameCanvas = tempRenderer.domElement;
+      gif.addFrame(frameCanvas, { delay: 50 }); // 50ms per frame = 20fps
+    }
     
-    // Download PNG immediately
-    const link = document.createElement('a');
-    link.href = imageData;
-    link.download = name + '.png';
-    link.click();
+    // When GIF is finished, download it and save to server
+    gif.on('finished', async function(blob) {
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.download = name + '.gif';
+      link.click();
+      URL.revokeObjectURL(url);
+      
+      // Convert blob to base64 for server storage (thumbnail)
+      const reader = new FileReader();
+      reader.onload = async function() {
+        const imageData = reader.result;
+        
+        if (statusbar) statusbar.textContent = 'Saving bowl...';
+        
+        // Send to server
+        const response = await fetch('/api/paintings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageData, name, type: 'bowl' })
+        });
+        
+        if (!response.ok) {
+          let errorData;
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            try {
+              errorData = await response.json();
+            } catch (e) {
+              errorData = { message: `Server error: ${response.status}` };
+            }
+          } else {
+            const text = await response.text();
+            errorData = { 
+              message: text.includes('MongoDB') || text.includes('Database') 
+                ? 'Database not configured. Please set MONGODB_URI in Vercel environment variables.'
+                : `Server error: ${response.status}`
+            };
+          }
+          throw new Error(errorData.message || errorData.error || `Server error: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        if (statusbar) statusbar.textContent = 'Bowl saved!';
+        
+        // Reload bowl gallery after saving
+        loadBowlGallery();
+        
+        // Reset status after 2 seconds
+        setTimeout(() => {
+          if (statusbar) statusbar.textContent = 'Ready';
+        }, 2000);
+      };
+      reader.readAsDataURL(blob);
+    });
+    
+    // Start rendering the GIF
+    gif.render();
     
     // Clean up
     tempRenderer.dispose();
@@ -978,46 +1051,6 @@ async function saveBowl() {
       mesh.material.dispose();
     });
     
-    // Update status
-    if (statusbar) statusbar.textContent = 'Saving bowl...';
-    
-    // Send to server
-    const response = await fetch('/api/paintings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageData, name, type: 'bowl' })
-    });
-    
-    if (!response.ok) {
-      let errorData;
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        try {
-          errorData = await response.json();
-        } catch (e) {
-          errorData = { message: `Server error: ${response.status}` };
-        }
-      } else {
-        const text = await response.text();
-        errorData = { 
-          message: text.includes('MongoDB') || text.includes('Database') 
-            ? 'Database not configured. Please set MONGODB_URI in Vercel environment variables.'
-            : `Server error: ${response.status}`
-        };
-      }
-      throw new Error(errorData.message || errorData.error || `Server error: ${response.status}`);
-    }
-    
-    const result = await response.json();
-    if (statusbar) statusbar.textContent = 'Bowl saved!';
-    
-    // Reload bowl gallery after saving
-    loadBowlGallery();
-    
-    // Reset status after 2 seconds
-    setTimeout(() => {
-      if (statusbar) statusbar.textContent = 'Ready';
-    }, 2000);
   } catch (error) {
     console.error('Error saving bowl:', error);
     if (statusbar) statusbar.textContent = 'Error: ' + error.message;
