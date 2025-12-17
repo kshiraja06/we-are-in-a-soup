@@ -926,7 +926,7 @@ async function saveBowl() {
   try {
     if (statusbar) statusbar.textContent = 'Saving bowl...';
     
-    // Render current bowl to canvas
+    // Render current bowl to canvas using the glazing renderer
     const canvas = glazing3DRenderer.domElement;
     const imageData = canvas.toDataURL('image/png');
     
