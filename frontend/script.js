@@ -262,14 +262,17 @@ async function openGallery(){
   // Show modal immediately with loading message
   if (modal) {
     modal.classList.remove("hidden");
+    console.log('Modal visible');
   }
   if (galleryGrid) {
     galleryGrid.innerHTML = "<div class='gallery-loading'>Loading soups… please wait…</div>";
   }
 
   try {
+    console.log('Fetching paintings from /api/paintings');
     const response = await fetch('/api/paintings?t=' + Date.now());
     console.log('Response status:', response.status, response.ok);
+    console.log('Response headers:', response.headers.get('content-type'));
     
     if (!response.ok) {
       let errorData;
@@ -292,7 +295,7 @@ async function openGallery(){
       }
       console.error('Error loading gallery:', errorData);
       if (galleryGrid) {
-        galleryGrid.innerHTML="<div style='color:#f77;padding:12px'>Error loading gallery: " + (errorData.message || 'Unknown error') + "</div>";
+        galleryGrid.innerHTML="<div style='color:#f77;padding:12px'>❌ Error loading gallery: " + (errorData.message || 'Unknown error') + "</div>";
       }
       return;
     }
@@ -301,6 +304,7 @@ async function openGallery(){
     console.log('Paintings received in openGallery:', paintings.length, paintings);
     
     if (!galleryGrid) {
+      console.error('Gallery grid element not found!');
       return;
     }
 
@@ -309,7 +313,7 @@ async function openGallery(){
     
     if(!paintings.length) {
       console.log('No paintings found');
-      galleryGrid.innerHTML="<div style='color:#777;padding:12px'>No soups saved yet.</div>";
+      galleryGrid.innerHTML="<div style='color:#777;padding:12px'>No soups saved yet. Paint something in the studio and click Save!</div>";
       return;
     }
     
@@ -345,7 +349,7 @@ async function openGallery(){
   } catch (error) {
     console.error('Error loading gallery:', error);
     if (galleryGrid) {
-      galleryGrid.innerHTML="<div style='color:#f77;padding:12px'>Error loading gallery: " + error.message + "</div>";
+      galleryGrid.innerHTML="<div style='color:#f77;padding:12px'>❌ Error: " + error.message + "</div>";
     }
   }
 }
