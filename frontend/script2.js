@@ -38,10 +38,10 @@
   let yaw = 0, pitch = 0;
 
   // Soft warm lighting
-  const hemisphereLight = new THREE.HemisphereLight(0xfffacd, 0xffffe0, 0.4); // Soft yellow top and bottom
+  const hemisphereLight = new THREE.HemisphereLight(0xfffacd, 0xffffe0, 0.45); // Soft yellow top and bottom
   scene.add(hemisphereLight);
   
-  const dir = new THREE.DirectionalLight(0xfffacd, 0.3); // Soft yellow directional light
+  const dir = new THREE.DirectionalLight(0xfffacd, 0.35); // Soft yellow directional light
   dir.position.set(20, 30, 20);
   dir.castShadow = true;
   dir.shadow.mapSize.width = 2048;
@@ -54,8 +54,10 @@
   dir.shadow.camera.bottom = -100;
   scene.add(dir);
   
-  // Additional soft ambient light
-  scene.add(new THREE.AmbientLight(0xfffacd, 0.5)); // Soft yellow ambient
+  // Soft warm ambient light
+  scene.add(new THREE.AmbientLight(0xfff5e6, 0.55)); // Warm cream ambient
+  
+  console.log('Added soft warm lighting');
   
   // Store collider visuals for later cleanup if needed
   const colliderVisuals = [];
@@ -215,20 +217,20 @@
     const roomCenter = new THREE.Vector3();
     roomBox.getCenter(roomCenter);
     
-    // Add a floor plane (smaller than world boundaries for better feel)
-    const floorSize = 120; // Smaller floor size
+    // Add green floor for room
+    const floorSize = 120;
     const floorGeometry = new THREE.PlaneGeometry(floorSize, floorSize);
     const floorMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0xa8c5a0, // Muddy pastel green floor
+      color: 0xa8c5a0, // Green floor
       roughness: 0.8,
       metalness: 0.1
     });
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-    floor.rotation.x = -Math.PI / 2; // Rotate to be horizontal
-    floor.position.set(roomCenter.x, roomMinY, roomCenter.z); // Position at room's center X/Z and bottom Y
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set(roomCenter.x, roomMinY, roomCenter.z);
     floor.receiveShadow = true;
     scene.add(floor);
-    console.log('Added floor plane at room center:', roomCenter, 'floor level:', roomMinY);
+    console.log('Added green floor at room center:', roomCenter, 'floor level:', roomMinY);
   } catch (err) {
     console.error('Failed to load classroom.glb, using fallback box');
     model = new THREE.Mesh(
@@ -272,8 +274,10 @@
     });
     scene.add(claytable);
     
-    // Add claytable to collision system
-    meshColliders.push(claytable);
+    // Add claytable to collision system with taller collision box
+    const claytableBounds = new THREE.Box3().setFromObject(claytable);
+    claytableBounds.max.y += 3; // Make collision taller for camera
+    meshColliders.push(claytableBounds);
     console.log('Added claytable to collision system');
         
   } catch (err) {
@@ -389,58 +393,172 @@
     console.error('Failed to create glazing bowl:', err);
   }
 
-  // Add worry box placeholder
+  // Load kitchen table.glb for worry box station
   let worryBox;
   try {
-    // Create a simple box for the worry station - make it more visible
-    const worryBoxGeometry = new THREE.BoxGeometry(2.0, 2.2, 1.5);
-    const worryBoxMaterial = new THREE.MeshStandardMaterial({ 
-      color: "blue", // Warm paper-like color
-      roughness: 0.7,
-      metalness: 0.0,
-      emissive: 0xd4c5a9,
-      emissiveIntensity: 0.3
-    });
-    worryBox = new THREE.Mesh(worryBoxGeometry, worryBoxMaterial);
+    const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
+    const gltf = await new Promise((res, rej) =>
+      new GLTFLoader().load(
+        "./assets/kitchen table.glb",
+        (data) => { res(data); },
+        undefined,
+        (err) => { rej(err); }
+      )
+    );
+    worryBox = gltf.scene;
     
-    // Position worry box in the scene (closer to player spawn for visibility)
-    // Player starts at (70, 3.5, 10), so put worry box right next to them
-    worryBox.position.set(61, 1, -15);
+    // Scale up the table to make it more visible
+    worryBox.scale.set(4, 4, 4);
+    
+    // Position kitchen table in the scene (closer to player spawn for visibility)
+    // Player starts at (70, 3.5, 10), so put table right next to them
+    worryBox.position.set(58, -1.5, -15);
     worryBox.castShadow = true;
     worryBox.receiveShadow = true;
     
-    scene.add(worryBox);
-    // Don't add to collision system - it's purely visual/interactive
+    // Enable shadows for all meshes in the model
+    worryBox.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
     
-    console.log('Added worry box to scene at position:', worryBox.position);
+    scene.add(worryBox);
+    
+    // Add to collision system with taller collision box
+    const worryBoxBounds = new THREE.Box3().setFromObject(worryBox);
+    const tableTop = worryBoxBounds.max.y;
+    worryBoxBounds.max.y += 3; // Make collision taller for camera
+    meshColliders.push(worryBoxBounds);
+    
+    // Create canvas for text
+    const chitCanvas = document.createElement('canvas');
+    chitCanvas.width = 512;
+    chitCanvas.height = 256;
+    const chitCtx = chitCanvas.getContext('2d');
+    
+    // Draw chit background (cream/beige paper)
+    chitCtx.fillStyle = '#fffacd';
+    chitCtx.fillRect(0, 0, 512, 256);
+    
+    // Add slight texture/border
+    chitCtx.strokeStyle = '#d4a574';
+    chitCtx.lineWidth = 4;
+    chitCtx.strokeRect(0, 0, 512, 256);
+    
+    // Draw text
+    chitCtx.fillStyle = '#3d2817';
+    chitCtx.font = 'italic bold 48px Georgia, serif';
+    chitCtx.textAlign = 'center';
+    chitCtx.textBaseline = 'middle';
+    chitCtx.fillText('holding space', 256, 128);
+    
+    // Create texture and material
+    const chitTexture = new THREE.CanvasTexture(chitCanvas);
+    const chitMaterial = new THREE.MeshStandardMaterial({
+      map: chitTexture,
+      transparent: true,
+      side: THREE.DoubleSide
+    });
+    
+    // Create plane for chit
+    const chitGeometry = new THREE.PlaneGeometry(1.5, 0.75);
+    const chit = new THREE.Mesh(chitGeometry, chitMaterial);
+    chit.position.set(worryBox.position.x+3.5, tableTop + 0.05, worryBox.position.z+1);
+    chit.rotation.x = -Math.PI / 2; // Lay flat on table
+    chit.receiveShadow = true;
+    scene.add(chit);
+    
+    console.log('Added kitchen table (worry box) with "holding space" chit at position:', worryBox.position);
   } catch (err) {
-    console.error('Failed to create worry box:', err);
+    console.error('Failed to load kitchen table.glb for worry box:', err);
   }
 
-  // Add kitchen setup box placeholder
+  // Load kitchen table 2.glb for kitchen setup station
   let kitchenBox;
   try {
-    // Create a simple box for the kitchen setup station
-    const kitchenBoxGeometry = new THREE.BoxGeometry(2.0, 2.2, 1.5);
-    const kitchenBoxMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0xff8c42, // Orange color to differentiate from worry box
-      roughness: 0.7,
-      metalness: 0.0,
-      emissive: 0xff8c42,
-      emissiveIntensity: 0.2
-    });
-    kitchenBox = new THREE.Mesh(kitchenBoxGeometry, kitchenBoxMaterial);
+    const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
+    const gltf = await new Promise((res, rej) =>
+      new GLTFLoader().load(
+        "./assets/kitchen table 2.glb",
+        (data) => { res(data); },
+        undefined,
+        (err) => { rej(err); }
+      )
+    );
+    kitchenBox = gltf.scene;
     
-    // Position kitchen box further back and to the right
-    kitchenBox.position.set(85, 1, -35);
+    // Scale up the table to make it more visible
+    kitchenBox.scale.set(3.5, 3.5, 3.5);
+    
+    // Position kitchen table further back and to the right
+    kitchenBox.position.set(80, -1.5, -9);
     kitchenBox.castShadow = true;
     kitchenBox.receiveShadow = true;
     
+    // Enable shadows for all meshes in the model
+    kitchenBox.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    
     scene.add(kitchenBox);
     
-    console.log('Added kitchen box to scene at position:', kitchenBox.position);
+    // Add to collision system with taller collision box
+    const kitchenBoxBounds = new THREE.Box3().setFromObject(kitchenBox);
+    kitchenBoxBounds.max.y += 3; // Make collision taller for camera
+    meshColliders.push(kitchenBoxBounds);
+    
+    // Add induction cooktop on the table
+    const inductionGeometry = new THREE.BoxGeometry(0.8, 0.05, 0.8);
+    const inductionMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x1a1a1a, // Dark grey/black for induction
+      roughness: 0.3,
+      metalness: 0.7
+    });
+    const induction = new THREE.Mesh(inductionGeometry, inductionMaterial);
+    
+    // Position induction on top of the table
+    // Get table bounding box to place induction on top
+    const tableBox = new THREE.Box3().setFromObject(kitchenBox);
+    const tableHeight = tableBox.max.y;
+    induction.position.set(83, tableHeight + 0.025, -8);
+    induction.castShadow = true;
+    induction.receiveShadow = true;
+    scene.add(induction);
+    
+    // Add soup pot on the induction - opaque pot with visible soup on top
+    const potGeometry = new THREE.CylinderGeometry(0.5, 0.45, 0.6, 32);
+    const potMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x606060, // Dark grey for pot
+      roughness: 0.5,
+      metalness: 0.7
+    });
+    const pot = new THREE.Mesh(potGeometry, potMaterial);
+    pot.position.set(83, tableHeight + 0.025 + 0.3, -8);
+    pot.castShadow = true;
+    pot.receiveShadow = true;
+    scene.add(pot);
+    
+    // Add soup liquid visible at the top of the pot
+    const soupGeometry = new THREE.CylinderGeometry(0.48, 0.48, 0.02, 32);
+    const soupMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0xd4a574, // Soup color (brownish)
+      roughness: 0.9,
+      metalness: 0.0,
+      emissive: 0xd4a574,
+      emissiveIntensity: 0.4
+    });
+    const soup = new THREE.Mesh(soupGeometry, soupMaterial);
+    soup.position.set(83, tableHeight + 0.025 + 0.59, -8); // Just below pot rim
+    scene.add(soup);
+    
+    console.log('Added kitchen table 2 with induction and soup pot at position:', kitchenBox.position);
   } catch (err) {
-    console.error('Failed to create kitchen box:', err);
+    console.error('Failed to load kitchen table 2.glb:', err);
   }
 
   // Create a subtle glowing plane on the wall surface
@@ -467,6 +585,175 @@
   window.endingGlowLight = glowLight;
   
   console.log('Wall glow plane created at position:', glowPlane.position);
+
+  // Create text-based recipe cards on back wall - very tight spacing
+  const recipeCards = [
+    { name: 'Tomato Soup', x: -2.5, y: 6.5, color: 0xffcccc, border: 0xff6666 },
+    { name: 'Bassaru', x: -1.2, y: 7.2, color: 0xccffff, border: 0x6666ff },
+    { name: 'Goat Leg Soup', x: 0, y: 7.5, color: 0xffeecc, border: 0xff6666 },
+    { name: 'Veg Soup', x: 1.2, y: 7.2, color: 0xffffcc, border: 0x666666 },
+    { name: 'Mushroom Soup', x: 2.5, y: 6.5, color: 0xffccff, border: 0xff66ff },
+    { name: 'Raoji Ganji', x: -2.5, y: 4.8, color: 0xffddcc, border: 0xff6666 },
+    { name: 'Mix Veg Soup', x: -1.2, y: 5.5, color: 0xeeffcc, border: 0x666666 },
+    { name: 'Red Lentil Soup', x: 0, y: 5.5, color: 0xffffdd, border: 0x666666 },
+    { name: 'Lemon Coriander', x: 1.2, y: 5.5, color: 0xeeffee, border: 0x666666 },
+    { name: 'Rasam', x: 2.5, y: 4.8, color: 0xffdddd, border: 0xff6666 },
+    { name: 'Chicken Soup', x: -1.5, y: 3.2, color: 0xeeffdd, border: 0xff6666 },
+    { name: 'Ginger Tea', x: 0, y: 3.2, color: 0xffeeee, border: 0x666666 },
+    { name: 'Huli', x: 1.5, y: 3.2, color: 0xffffee, border: 0x6666ff }
+  ];
+
+  // Store recipe card meshes for click detection
+  window.recipeCardMeshes = [];
+
+  // Position cards on the back wall, moved forward
+  const wallZ = -38;
+  const wallX = 62;
+
+  // Create text-based recipe cards
+  recipeCards.forEach(card => {
+    // Create canvas for text card
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    
+    // Draw card background
+    ctx.fillStyle = '#' + card.color.toString(16).padStart(6, '0');
+    ctx.fillRect(0, 0, 512, 512);
+    
+    // Draw border
+    ctx.strokeStyle = '#' + card.border.toString(16).padStart(6, '0');
+    ctx.lineWidth = 8;
+    ctx.strokeRect(10, 10, 492, 492);
+    
+    // Draw recipe name
+    ctx.fillStyle = '#333333';
+    ctx.font = 'bold 48px Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(card.name, 256, 256);
+    
+    // Create texture and material
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.MeshStandardMaterial({
+      map: texture,
+      side: THREE.DoubleSide
+    });
+    
+    // Create plane for card (smaller size)
+    const cardGeometry = new THREE.PlaneGeometry(1.0, 1.0);
+    const cardMesh = new THREE.Mesh(cardGeometry, material);
+    
+    // Position on back wall
+    cardMesh.position.set(wallX + card.x, card.y, wallZ + 0.1);
+    cardMesh.rotation.y = 0; // Face forward into room
+    cardMesh.receiveShadow = true;
+    
+    // Store card data for click detection
+    cardMesh.userData.recipeName = card.name;
+    cardMesh.userData.isRecipeCard = true;
+    
+    scene.add(cardMesh);
+    window.recipeCardMeshes.push(cardMesh);
+  });
+  
+  console.log('Added', recipeCards.length, 'recipe card placeholders on back wall');
+
+  // Add dining table to back of room
+  try {
+    const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
+    
+    const tableGltf = await new Promise((res, rej) =>
+      new GLTFLoader().load(
+        "./assets/dining table.glb",
+        (data) => { res(data); },
+        undefined,
+        (err) => { rej(err); }
+      )
+    );
+    
+    const diningTable = tableGltf.scene;
+    diningTable.position.set(65,-2, -29); // Back of room
+    diningTable.rotation.y = Math.PI / 2;
+    diningTable.scale.set(4.0, 4.0, 4.0);
+    diningTable.castShadow = true;
+    diningTable.receiveShadow = true;
+    
+    diningTable.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        // Fix materials to ensure they're not black
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach(mat => {
+              mat.roughness = 0.6;
+              mat.metalness = 0.1;
+            });
+          } else {
+            child.material.roughness = 0.6;
+            child.material.metalness = 0.1;
+          }
+        }
+      }
+    });
+    
+    scene.add(diningTable);
+    
+    // Add to collision system with taller collision box
+    const diningTableBounds = new THREE.Box3().setFromObject(diningTable);
+    diningTableBounds.max.y += 3; // Make collision taller for camera
+    meshColliders.push(diningTableBounds);
+    
+    console.log('Added dining table to back of room');
+  } catch (err) {
+    console.error('Failed to load dining table:', err);
+  }
+
+  // Add just 1 chair in the room for atmosphere
+  const chairPositions = [
+    { pos: [75, 0, -20], rot: -Math.PI / 4 } // Back right area
+  ];
+
+  // Load and place chairs
+  try {
+    const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
+    
+    const chairGltf = await new Promise((res, rej) =>
+      new GLTFLoader().load(
+        "./assets/chairs.glb",
+        (data) => { res(data); },
+        undefined,
+        (err) => { rej(err); }
+      )
+    );
+    
+    for (let i = 0; i < chairPositions.length; i++) {
+      const chairPos = chairPositions[i];
+      const chair = chairGltf.scene.clone();
+      
+      chair.position.set(chairPos.pos[0], chairPos.pos[1], chairPos.pos[2]);
+      chair.rotation.y = chairPos.rot;
+      chair.scale.set(0.5, 0.5, 0.5);
+      chair.castShadow = true;
+      chair.receiveShadow = true;
+      
+      chair.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      
+      scene.add(chair);
+      meshColliders.push(chair);
+    }
+    
+    console.log('Added 1 chair to the room');
+  } catch (err) {
+    console.error('Failed to load chairs:', err);
+  }
 
   // Input
   const raycaster = new THREE.Raycaster();
@@ -632,7 +919,171 @@
         window.open('./kitchen-setup.html', '_blank');
       }
     }
+
+    // Check if clicking on recipe cards
+    if (window.recipeCardMeshes && window.recipeCardMeshes.length > 0) {
+      const cardIntersects = raycaster.intersectObjects(window.recipeCardMeshes, false);
+      if (cardIntersects.length > 0) {
+        const clickedCard = cardIntersects[0].object;
+        if (clickedCard.userData.isRecipeCard) {
+          // Show expanded recipe view
+          showRecipeExpanded(null, clickedCard.userData.recipeName);
+        }
+      }
+    }
   });
+
+  // Recipe data with full instructions
+  const recipeData = {
+    'Tomato Soup': {
+      steps: ['1. Peel Apples and Carrots and Chop into medium sized bits', '2. Tomatoes apples and carrots go into 1/2 water and boil until carrots and apple go soft', '3. Blend, Strain', '4. Adjust salt, Pepper, Sugar, Butter for seasoning and add Water for consistency'],
+      ingredients: '1:2:4 = apple: carrot: tomato, warm fat, salt, pepper, sugar, butter'
+    },
+    'Bassaru': {
+      steps: ['1. Separate the water after cooking greens and dal', '2. Boil that water with Garlic, Cummin and Pepper', '3. Serve hot, sometimes with Rice, Brown Rice or Ragi Mudde'],
+      ingredients: 'Palak, Keerai or Soppu, Leftover Dal Water, Garlic, Cummin, Pepper',
+      note: 'Bassaru is not thick, it should be clear'
+    },
+    'Goat Leg Soup': {
+      steps: ['1. Cut the goat leg into pieces', '2. Put it in a cooker', '3. Add salt, chilli powder, pepper and garlic', '4. Pressure cook / boil well until the stock becomes strong', '5. Remove the leg juice and have the soup', '6. Garnish with Kothmir (fresh coriander)'],
+      ingredients: 'Goat Leg (cut), Salt, Chilli Powder, Black Pepper, Garlic',
+      notes: ['It helps with joint pain', 'You get a good sleep', 'It is a medicine food', 'Best had at night']
+    },
+    'Veg Soup': {
+      steps: ['1. Heat oil in a pot and add ginger', '2. Add all the chopped vegetables and sauté for about 10 minutes', '3. Pour in water or stock and bring it to boil', '4. Lower the heat and simmer for 15-20 minutes until the veggies are tender', '5. Season with Salt and Pepper', '6. Serve hot'],
+      ingredients: 'Carrots, Ginger, Garlic, Veggies, Salt, Pepper, Oil, Cornflour, Butter, Chillies'
+    },
+    'Mushroom Soup': {
+      steps: ['1. Heat oil in a pot and sauté garlic, ginger and chillies', '2. Add mushrooms and cook over a minute', '3. Add the mixed vegetables and sauté for about 10 minutes', '4. Pour in water and bring to boil', '5. Add Soy sauce, vinegar, salt and pepper', '6. Stir the cornflour slurry and cook till slightly thick', '7. Taste and Adjust Seasoning'],
+      ingredients: 'Mushrooms, Veggies, Garlic, Ginger, Chillies, Soy, Vinegar, Cornflour, Water, Salt, Pepper, Oil, Spring Onions'
+    },
+    'Raoji Ganji': {
+      steps: ['No recipe text available - traditional preparation'],
+      ingredients: 'Traditional ingredients'
+    },
+    'Mix Veg Soup': {
+      steps: ['1. Heat oil in a pot and add ginger', '2. Add all the chopped vegetables and sauté for about 10 minutes', '3. Pour in water or stock and bring it to boil', '4. Lower the heat and simmer for 15-20 minutes until the veggies are tender', '5. Season with Salt and Pepper', '6. Serve hot'],
+      ingredients: 'Carrots, Ginger, Garlic, Veggies, Salt, Pepper, Oil, Cornflour, Butter, Chillies'
+    },
+    'Red Lentil Soup': {
+      steps: ['1. Rinse red lentils off in the water in a strainer and set aside', '2. In a pot warm extra virgin olive oil', '3. Add chopped onions and stir well combining them all together', '4. Pour boiled water over, and stir everything well combining the water with lentils and onions', '5. Add salt and cumin, give it another stir', '6. Let it cook for 30 mins on low heat'],
+      ingredients: 'Red Split Lentils, Onions, Olive Oil, Water, Salt, Cummin Powder',
+      subtitle: 'Palestinian Adas'
+    },
+    'Lemon Coriander': {
+      steps: ['1. Rinse and finely chop fresh coriander stems and leaves', '2. In a pot, heat a little oil and add chopped garlic & ginger. Stir gently', '3. Pour in water or light vegetable stock and bring to a soft boil', '4. Add coriander stems, salt, and crushed black pepper', '5. Let the soup simmer for 20 minutes on low heat', '6. Finish with chopped coriander leaves and mix elegantly'],
+      ingredients: 'Onion, Garlic, Ginger, Veggies, Vegetable Stock, Water, Coriander, Lemon, Pepper, Salt, Oil'
+    },
+    'Rasam': {
+      steps: ['1. Crush garlic, pepper, coriander, red chillies and jeera coarsely', '2. Soak Tamarind, extract the juice, and keep aside', '3. In a pot, add tomatoes, tamarind water, turmeric, rasam powder, salt and water', '4. Lightly mash the tomatoes and add the crushed spice mix. Simmer for 10 minutes', '5. Heat oil, add onion, add curry leaves, and let them crackle', '6. Pour this tadka into the rasam and switch off flame'],
+      ingredients: 'Garlic, Pepper, Coriander, Red Chillies, Tomato, Tamarind, Rasam Powder, Onion, Curry Leaf, Oil, Turmeric Powder',
+      subtitle: "Basavaraj's Rasam"
+    },
+    'Chicken Soup': {
+      steps: ['1. In warm water, put some fermented fish (Ngari)', '2. After 2 minutes - your onion, garlic and ginger. Let it boil', '3. Add chicken and bamboo shoots', '4. You can put dry chilli, pepper and salt to taste', '5. Spring onions (optional)'],
+      ingredients: 'Fermented fish (Ngari), Onion, Garlic, Ginger, Chicken, Bamboo shoots, Chilli, Pepper, Salt, Spring onions',
+      subtitle: "Dolly Sanasam's Recipe"
+    },
+    'Ginger Tea': {
+      steps: ['1. Bring to boil, 1 cup of water in a sauce pan. Add tea powder, crushed ginger and switch off the flame. Mix well', '2. Keep it covered for about 10 minutes, add lemon', '3. Mix honey or sugar as needed. Enjoy immediately'],
+      ingredients: 'Water, Tea Leaves, Ginger, Lemon, Sugar/Jaggery'
+    },
+    'Huli': {
+      steps: ['1. Boil vegetables in tamarind water', '2. Add dal water and sambar Powder', '3. Simmer and Temper lightly'],
+      ingredients: 'Toor Dal Water, Tamarind, Sambar Powder, Drumstick or Pumpkin, Curry Leaves',
+      subtitle: 'Thin Sambar-like Soup - Lakshmamma\'s Recipe',
+      notes: ['Eaten with hot rice', 'When there are a lot of people at home', 'Karnataka comfort soup']
+    }
+  };
+
+  // Function to show expanded recipe card
+  function showRecipeExpanded(imagePath, recipeName) {
+    // Create overlay if it doesn't exist
+    let overlay = document.getElementById('recipeExpandedOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'recipeExpandedOverlay';
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        cursor: pointer;
+        overflow-y: auto;
+      `;
+      
+      const content = document.createElement('div');
+      content.id = 'recipeExpandedContent';
+      content.style.cssText = `
+        background: white;
+        padding: 40px;
+        border-radius: 12px;
+        max-width: 700px;
+        max-height: 85vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        margin: 20px;
+      `;
+      
+      overlay.appendChild(content);
+      document.body.appendChild(overlay);
+      
+      // Close on click
+      overlay.addEventListener('click', () => {
+        overlay.style.display = 'none';
+      });
+    }
+    
+    // Get recipe data
+    const recipe = recipeData[recipeName] || { steps: ['Recipe not found'], ingredients: '' };
+    
+    // Build steps HTML - remove number prefixes since <ol> provides numbering
+    let stepsHTML = recipe.steps.map(step => {
+      // Remove "1. ", "2. ", etc. from the beginning of each step
+      const cleanStep = step.replace(/^\d+\.\s*/, '');
+      return `<li style="margin-bottom: 12px;">${cleanStep}</li>`;
+    }).join('');
+    
+    // Build notes HTML if exists
+    let notesHTML = '';
+    if (recipe.notes) {
+      notesHTML = '<div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 6px;">';
+      notesHTML += '<strong style="color: #666;">Notes:</strong><ul style="margin: 10px 0 0 20px;">';
+      notesHTML += recipe.notes.map(note => `<li style="color: #666; margin-bottom: 6px;">${note}</li>`).join('');
+      notesHTML += '</ul></div>';
+    }
+    if (recipe.note) {
+      notesHTML = `<div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 6px; color: #666;"><em>${recipe.note}</em></div>`;
+    }
+    
+    // Update content and show
+    const content = document.getElementById('recipeExpandedContent');
+    content.innerHTML = `
+      <h2 style="font-family: Georgia, serif; color: #333; margin-bottom: 8px;">${recipeName}</h2>
+      ${recipe.subtitle ? `<p style="font-family: Georgia, serif; color: #999; font-style: italic; margin-bottom: 20px;">${recipe.subtitle}</p>` : ''}
+      
+      <div style="margin-bottom: 25px;">
+        <h3 style="font-family: Georgia, serif; color: #555; margin-bottom: 12px; font-size: 18px;">Ingredients</h3>
+        <p style="font-family: Georgia, serif; color: #666; line-height: 1.6; background: #fff9e6; padding: 12px; border-radius: 6px;">${recipe.ingredients}</p>
+      </div>
+      
+      <div>
+        <h3 style="font-family: Georgia, serif; color: #555; margin-bottom: 12px; font-size: 18px;">Instructions</h3>
+        <ol style="font-family: Georgia, serif; color: #666; line-height: 1.6; padding-left: 20px;">
+          ${stepsHTML}
+        </ol>
+      </div>
+      
+      ${notesHTML}
+    `;
+    overlay.style.display = 'flex';
+  }
 
   // Clamp removed - relying on colliders for boundary detection
 
@@ -811,7 +1262,7 @@
       "the poorest pay the highest price for the climate crisis",
       "more plastic enters the ocean than data enters your phone",
       "most human suffering is preventable—and it still happens",
-      "someone somewhere is making your clothes for less than a living wage"
+      "someone somewhere is makicng your clothes for less than a living wage"
     ];
     
     statsOverlay.style.display = 'block';

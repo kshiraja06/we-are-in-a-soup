@@ -192,29 +192,29 @@
   <!-- Worry Box Window -->
   <div id="worryWindow" class="win worry-window hidden-init" style="position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 600px; z-index: 10000;">
     <div class="titlebar" style="background: #f5f0e8; border-bottom: 2px solid #d4a574; padding: 8px 12px; cursor: move;">
-      <span style="flex: 1; font-family: 'Segoe Print', 'Comic Sans MS', cursive; font-weight: bold; font-size: 14px;">holding space</span>
+      <span style="flex: 1; font-family: 'Georgia', 'Libre Baskerville', serif; font-weight: bold; font-size: 18px; font-style: italic;">holding space</span>
       <button class="tbtn" id="worryMinBtn" title="Minimize" style="cursor: pointer;">_</button>
       <button class="tbtn" id="worryMaxBtn" title="Maximize" style="cursor: pointer;">□</button>
       <button class="tbtn" id="worryCloseBtn" title="Close" style="cursor: pointer;">✕</button>
     </div>
-    <div class="worry-content">
+    <div class="worry-content" style="padding: 24px; min-height: auto;">
       <div id="worryInputPanel" class="worry-panel">
-        <div style="font-size: 13px; color: #333; margin-bottom: 12px; font-weight: bold; font-family: 'Segoe Print', 'Comic Sans MS', cursive;">what's weighing on you?</div>
-        <textarea id="worryInput" placeholder="type your worry... (anonymous)" style="width: 100%; height: 150px; padding: 12px; border: 1px solid #bbb; border-radius: 3px; font-family: 'Segoe Print', 'Comic Sans MS', cursive; font-size: 13px; resize: none; background: #fffef0; color: #333; box-sizing: border-box;"></textarea>
-        <div style="margin-top: 12px; display: flex; gap: 8px;">
-          <button id="worrySubmitBtn" class="tool" style="flex: 1; font-family: 'Segoe Print', 'Comic Sans MS', cursive; font-weight: bold; cursor: pointer; padding: 8px;">submit</button>
-          <button id="worryViewGalleryBtn" class="tool" style="flex: 1; font-family: 'Segoe Print', 'Comic Sans MS', cursive; font-weight: bold; cursor: pointer; padding: 8px;">view others</button>
+        <div style="font-size: 20px; color: #333; margin-bottom: 16px; font-weight: 700; font-family: 'Georgia', 'Libre Baskerville', serif; font-style: italic;">what's weighing on you?</div>
+        <textarea id="worryInput" placeholder="type your worry... (anonymous)" style="width: 100%; height: 180px; padding: 14px; border: 1px solid #bbb; border-radius: 3px; font-family: 'Georgia', serif; font-size: 16px; resize: none; background: #fffef0; color: #333; box-sizing: border-box; line-height: 1.6;"></textarea>
+        <div style="margin-top: 16px; display: flex; gap: 10px;">
+          <button id="worrySubmitBtn" class="tool" style="flex: 1; font-family: 'Georgia', serif; font-weight: bold; cursor: pointer; padding: 12px; font-size: 15px;">submit</button>
+          <button id="worryViewGalleryBtn" class="tool" style="flex: 1; font-family: 'Georgia', serif; font-weight: bold; cursor: pointer; padding: 12px; font-size: 15px;">view others</button>
         </div>
-        <div id="worryStatus" style="font-size: 11px; color: #666; margin-top: 8px; min-height: 14px; font-family: 'Segoe Print', 'Comic Sans MS', cursive;"></div>
+        <div id="worryStatus" style="font-size: 13px; color: #666; margin-top: 10px; min-height: 16px; font-family: 'Georgia', serif;"></div>
       </div>
 
       <div id="worryGalleryPanel" class="worry-panel" style="display: none;">
-        <div style="font-size: 13px; color: #333; margin-bottom: 12px; font-weight: bold; font-family: 'Segoe Print', 'Comic Sans MS', cursive;">worries from your community</div>
-        <div id="worryGalleryGrid" style="display: flex; flex-wrap: wrap; gap: 12px; max-height: 250px; overflow-y: auto;">
-          <div style="color: #999; width: 100%; text-align: center; font-family: 'Segoe Print', 'Comic Sans MS', cursive;">loading...</div>
+        <div style="font-size: 20px; color: #333; margin-bottom: 16px; font-weight: 700; font-family: 'Georgia', 'Libre Baskerville', serif; font-style: italic;">worries from your community</div>
+        <div id="worryGalleryGrid" style="display: flex; flex-wrap: wrap; gap: 12px; max-height: 280px; overflow-y: auto;">
+          <div style="color: #999; width: 100%; text-align: center; font-family: 'Georgia', serif; font-size: 15px;">loading...</div>
         </div>
-        <div style="margin-top: 12px;">
-          <button id="worryBackBtn" class="tool" style="width: 100%; font-family: 'Segoe Print', 'Comic Sans MS', cursive; font-weight: bold; cursor: pointer; padding: 8px;">back</button>
+        <div style="margin-top: 16px;">
+          <button id="worryBackBtn" class="tool" style="width: 100%; font-family: 'Georgia', serif; font-weight: bold; cursor: pointer; padding: 12px; font-size: 15px;">back</button>
         </div>
       </div>
     </div>

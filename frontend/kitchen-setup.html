@@ -2,42 +2,299 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>how to set up a kitchen!</title>
+  <title>how to set up a community kitchen</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
   <style>
-    html, body {
+    * {
       margin: 0;
       padding: 0;
-      height: 100%;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      box-sizing: border-box;
+    }
+    
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    body {
+      font-family: 'Lato', sans-serif;
       background: #f5f0e8;
-      color: #333;
+      color: #5a4a3a;
+      line-height: 1.8;
+      overflow-x: hidden;
     }
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 40px 20px;
-    }
-    h1 {
-      font-size: 2.5em;
-      color: #8b4513;
-      margin-bottom: 20px;
-      font-style: italic;
-    }
-    .placeholder {
+    
+    .header {
+      background: linear-gradient(135deg, #d4a574 0%, #c9956e 100%);
+      padding: 80px 20px;
       text-align: center;
-      padding: 100px 20px;
-      color: #999;
-      font-size: 1.2em;
+      border-bottom: 3px solid #8b6f47;
+    }
+    
+    .header h1 {
+      font-family: 'Libre Baskerville', serif;
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      color: #2d1f15;
+      margin-bottom: 20px;
+      font-weight: 400;
+      letter-spacing: -1px;
+      line-height: 1.2;
+    }
+    
+    .header .subtitle {
+      font-size: clamp(1rem, 2.5vw, 1.4rem);
+      color: #4a3a2a;
+      font-weight: 300;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 60px 30px;
+    }
+    
+    .intro {
+      font-size: 1.25rem;
+      color: #6a5a4a;
+      margin-bottom: 60px;
+      padding: 40px;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 8px;
+      border-left: 4px solid #d4a574;
+    }
+    
+    .section {
+      margin-bottom: 80px;
+      opacity: 0;
+      transform: translateY(30px);
+      animation: fadeInUp 0.8s ease forwards;
+    }
+    
+    .section:nth-child(1) { animation-delay: 0.1s; }
+    .section:nth-child(2) { animation-delay: 0.2s; }
+    .section:nth-child(3) { animation-delay: 0.3s; }
+    .section:nth-child(4) { animation-delay: 0.4s; }
+    .section:nth-child(5) { animation-delay: 0.5s; }
+    .section:nth-child(6) { animation-delay: 0.6s; }
+    .section:nth-child(7) { animation-delay: 0.7s; }
+    .section:nth-child(8) { animation-delay: 0.8s; }
+    .section:nth-child(9) { animation-delay: 0.9s; }
+    .section:nth-child(10) { animation-delay: 1s; }
+    
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .section-number {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      background: #d4a574;
+      color: white;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 50px;
+      font-weight: 700;
+      font-size: 1.3rem;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 10px rgba(212, 165, 116, 0.3);
+    }
+    
+    h2 {
+      font-family: 'Libre Baskerville', serif;
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      color: #8b6f47;
+      margin-bottom: 25px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    
+    p {
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+      color: #5a4a3a;
+    }
+    
+    .highlight {
+      background: linear-gradient(120deg, #ffd97a 0%, #ffb86b 100%);
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-weight: 600;
+      color: #4a3a2a;
+    }
+    
+    .quote {
+      font-family: 'Libre Baskerville', serif;
+      font-style: italic;
+      font-size: 1.3rem;
+      color: #8b6f47;
+      padding: 40px;
+      margin: 60px 0;
+      background: rgba(255, 255, 255, 0.7);
+      border-left: 5px solid #d4a574;
+      border-radius: 0 8px 8px 0;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+    
+    .footer {
+      background: #8b6f47;
+      color: #f5f0e8;
+      padding: 60px 20px;
+      text-align: center;
+      margin-top: 80px;
+    }
+    
+    .footer p {
+      color: #f5f0e8;
+      font-size: 1.1rem;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    
+    .divider {
+      width: 80px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #d4a574, transparent);
+      margin: 50px auto;
+    }
+    
+    @media (max-width: 768px) {
+      .header {
+        padding: 50px 20px;
+      }
+      
+      .container {
+        padding: 40px 20px;
+      }
+      
+      .intro {
+        padding: 25px;
+        font-size: 1.1rem;
+      }
+      
+      .section {
+        margin-bottom: 50px;
+      }
+      
+      .quote {
+        padding: 25px;
+        font-size: 1.1rem;
+      }
+    }
+    
+    /* Smooth scroll indicator */
+    .scroll-indicator {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #d4a574, #c9956e);
+      width: 0%;
+      z-index: 1000;
+      transition: width 0.1s ease;
     }
   </style>
 </head>
 <body>
+  <div class="scroll-indicator" id="scrollIndicator"></div>
+  
+  <div class="header">
+    <h1>How to Set Up a Community Kitchen</h1>
+    <p class="subtitle">A guide to creating shared spaces for connection, care, and nourishment</p>
+  </div>
+  
   <div class="container">
-    <h1>how to set up a kitchen!</h1>
-    <div class="placeholder">
-      <p>Content coming soon...</p>
+    <div class="intro">
+      <p>A community kitchen is a shared space where people come together to cook, eat, and clean as a group. These kitchens are often run by local councils or charities, but they can exist in many different forms. Each community kitchen responds to its own context and needs, yet they all share a common purpose: creating a space where people can connect through shared experiences and common struggles.</p>
+      
+      <p>Community kitchens also open up practical possibilities like sharing the cost of ingredients, planning meals together, and preparing nutritious food collectively. Because of this, they often become important gathering spaces, especially for people in precarious or transitional situations.</p>
+      
+      <p style="margin-bottom: 0;">If you're interested in starting a community kitchen, there are a few key things to think about.</p>
+    </div>
+    
+    <div class="section">
+      <div class="section-number">1</div>
+      <h2>Define the Purpose and Make a Manifesto</h2>
+      <p>Begin by clarifying who the kitchen is for and why it exists. Decide what the kitchen aims to do, when it will take place, and what resources are required. Whether the intention is to share cultural food practices, create dialogue, offer care during difficult times, or simply bring people together, having a <span class="highlight">shared purpose</span> helps shape the experience without over-controlling it.</p>
+      <p>Make a manifesto. Collectively arrive at the core values and intentions that matter to everyone involved, and hold these values as the foundation of the kitchen.</p>
+    </div>
+    
+    <div class="section">
+      <div class="section-number">2</div>
+      <h2>Find the Space</h2>
+      <p>A community kitchen can happen anywhere. <span class="highlight">Where there is a community, there can be a kitchen.</span> Look for a space that is easy to access and feels informal and welcoming. This could be a shared kitchen, classroom, courtyard, or semi-open area. The space doesn't need to be polished, but it should feel safe and comfortable.</p>
+      <p>Once a location is chosen, check what equipment and pantry items are available. Practical considerations like good ventilation, enough storage and workspace, seating, and access to plug points (if electrical equipment is used) can make the experience smoother.</p>
+    </div>
+    
+    <div class="section">
+      <div class="section-number">3</div>
+      <h2>Invite Participation, Not Performance</h2>
+      <p>Encourage people to contribute in simple, personal ways like by bringing a recipe, an ingredient, or a food-related memory. The focus should be on <span class="highlight">cooking together</span> rather than showcasing skill or expertise. A community kitchen works best when everyone feels equally involved, not observed.</p>
+    </div>
+    
+    <div class="section">
+      <div class="section-number">4</div>
+      <h2>Design the Flow and Groups</h2>
+      <p>Plan small groups that rotate jobs or do everything together. Keep a loose structure: arriving and setting up together, prepping ingredients, cooking, serving, eating together, open conversation, cleaning. Allow flexibility so conversations and interactions can unfold naturally.</p>
+      <p>Cleaning should also be a shared activity. Set up a simple, efficient system that everyone can follow. <span class="highlight">This is not a restaurant. Participants are not guests.</span> Provide minimal written instructions if needed, but allow shared responsibility to guide the process.</p>
+    </div>
+    
+    <div class="divider"></div>
+    
+    <div class="section">
+      <div class="section-number">5</div>
+      <h2>Prioritise Slowness and Presence</h2>
+      <p>Avoid rushing the process. Waiting and slowness should be treated as integral parts of the experience, not as steps to be completed quickly. Incorporate gentle activities during slower moments like listening to music, working with clay, or simply talking and connecting with one another.</p>
+    </div>
+    
+    <div class="section">
+      <div class="section-number">6</div>
+      <h2>Establish Gentle Rituals & Hold the Space with Care</h2>
+      <p>Simple actions like <span class="highlight">serving one another</span> and sitting at the same table help create a sense of equality and shared responsibility. Ensure the environment feels respectful and inclusive. Encourage listening, allow multiple voices, and let people participate at their own comfort level.</p>
+    </div>
+    
+    <div class="section">
+      <div class="section-number">7</div>
+      <h2>Document Thoughtfully but Lightly</h2>
+      <p>Collect recipes, pictures and short reflections after the session. Documentation should support memory and continuity without interrupting the gathering or experience itself.</p>
+    </div>
+    
+    <div class="section">
+      <div class="section-number">8</div>
+      <h2>Keep It Sustainable</h2>
+      <p>Be mindful of food waste, resource use, and accessibility. Make a compost pit for wet waste and segregate other waste to recycle. Use reusable utensils, share leftovers, and adapt menus to what is locally available.</p>
+    </div>
+    
+    <div class="section">
+      <div class="section-number">9</div>
+      <h2>Let the Kitchen Evolve</h2>
+      <p>A community kitchen is not fixed. With each gathering, allow participants to shape future sessions. Keep the kitchen open to public as per convenience. Growth happens through repetition, contribution, and care.</p>
+    </div>
+    
+    <div class="quote">
+      A community kitchen succeeds not by scale or efficiency, but by its ability to create connection, shared ownership, and a sense of belonging.
     </div>
   </div>
+  
+  <div class="footer">
+    <p>Remember: the heart of a community kitchen is not perfection, but presence. It's about showing up, sharing space, and nourishing one another—body and soul.</p>
+  </div>
+  
+  <script>
+    // Scroll progress indicator
+    window.addEventListener('scroll', () => {
+      const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = (winScroll / height) * 100;
+      document.getElementById('scrollIndicator').style.width = scrolled + '%';
+    });
+  </script>
 </body>
 </html>
