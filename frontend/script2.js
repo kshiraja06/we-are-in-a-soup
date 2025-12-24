@@ -660,6 +660,53 @@
   
   console.log('Added', recipeCards.length, 'recipe card placeholders on back wall');
 
+  // Create video frame on wall
+  const videoFrameGeometry = new THREE.PlaneGeometry(12, 7);
+  
+  // Create canvas for text texture
+  const videoCanvas = document.createElement('canvas');
+  videoCanvas.width = 512;
+  videoCanvas.height = 256;
+  const ctx = videoCanvas.getContext('2d');
+  
+  // Draw background
+  ctx.fillStyle = '#333333';
+  ctx.fillRect(0, 0, 512, 256);
+  
+  // Draw border
+  ctx.strokeStyle = '#666666';
+  ctx.lineWidth = 8;
+  ctx.strokeRect(4, 4, 504, 248);
+  
+  // Draw text
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 36px Georgia, serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText("nidhi's video !! click !!", 256, 128);
+  
+  // Create texture from canvas
+  const texture = new THREE.CanvasTexture(videoCanvas);
+  const videoFrameMaterial = new THREE.MeshStandardMaterial({
+    map: texture,
+    roughness: 0.3,
+    metalness: 0.1
+  });
+  const videoFrame = new THREE.Mesh(videoFrameGeometry, videoFrameMaterial);
+  
+  // Position video frame on left wall (facing right into room) - moved more to the right
+  videoFrame.position.set(60, 6, -20);
+  videoFrame.rotation.y = Math.PI / 2; // Face right into room
+  videoFrame.receiveShadow = true;
+  
+  // Store video frame data for click detection
+  videoFrame.userData.isVideoFrame = true;
+  
+  scene.add(videoFrame);
+  window.videoFrame = videoFrame;
+  
+  console.log('Video frame created at position:', videoFrame.position);
+
   // Add dining table to back of room
   try {
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
@@ -931,6 +978,15 @@
         }
       }
     }
+
+    // Check if clicking on video frame
+    if (window.videoFrame) {
+      const videoIntersects = raycaster.intersectObject(window.videoFrame, false);
+      if (videoIntersects.length > 0) {
+        // Show video player overlay
+        showVideoOverlay();
+      }
+    }
   });
 
   // Recipe data with full instructions
@@ -1084,6 +1140,70 @@
     `;
     overlay.style.display = 'flex';
   }
+
+  // Function to show video overlay
+  function showVideoOverlay() {
+    const videoOverlay = document.getElementById('videoOverlay');
+    const iframe = document.getElementById('wallVideo');
+    
+    if (videoOverlay && iframe) {
+      videoOverlay.style.display = 'flex';
+      // YouTube iframe will autoplay when loaded with autoplay parameter
+      // Reload iframe to trigger autoplay
+      const currentSrc = iframe.src;
+      iframe.src = currentSrc + '&autoplay=1';
+    }
+  }
+
+  // Close video overlay functionality - completely rewritten
+  function initVideoClose() {
+    console.log('Initializing video close functionality...');
+    
+    const closeVideoBtn = document.getElementById('closeVideo');
+    const videoOverlay = document.getElementById('videoOverlay');
+    
+    console.log('Elements found:', {
+      closeVideoBtn: !!closeVideoBtn,
+      videoOverlay: !!videoOverlay
+    });
+    
+    if (closeVideoBtn && videoOverlay) {
+      // Remove existing listeners to prevent duplicates
+      closeVideoBtn.replaceWith(closeVideoBtn.cloneNode(true));
+      const newCloseBtn = document.getElementById('closeVideo');
+      
+      // Simple direct close
+      newCloseBtn.onclick = function() {
+        console.log('Close button clicked!');
+        videoOverlay.style.display = 'none';
+        return false;
+      };
+      
+      // Close on overlay click
+      videoOverlay.onclick = function(e) {
+        if (e.target === videoOverlay) {
+          console.log('Background clicked, closing overlay');
+          videoOverlay.style.display = 'none';
+        }
+      };
+      
+      // ESC key close
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && videoOverlay.style.display === 'flex') {
+          console.log('ESC pressed, closing overlay');
+          videoOverlay.style.display = 'none';
+        }
+      });
+      
+      console.log('Video close functionality initialized');
+    } else {
+      console.error('Missing video overlay elements');
+    }
+  }
+  
+  // Initialize immediately and also on DOMContentLoaded
+  initVideoClose();
+  document.addEventListener('DOMContentLoaded', initVideoClose);
 
   // Clamp removed - relying on colliders for boundary detection
 
