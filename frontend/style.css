@@ -11,12 +11,6 @@
 
 *{box-sizing:border-box}
 
-/* Font file not found - using system monospace font instead */
-/* @font-face {
-    font-family: "MyPixelFont";
-    src: url("./fonts/pixel.ttf") format("truetype");
-} */
-
 html,body{
   height:100%;margin:0;
   font-family: "MS Serif", "Georgia", serif;
@@ -26,7 +20,6 @@ html,body{
   justify-content:center;
   padding:0
 }
-
 
 .win{
   width:880px;
@@ -65,7 +58,7 @@ html,body{
   border:1px solid rgba(0,0,0,0.08)
 }
 
-/* --- TITLE BAR --- */
+/* title bar */
 .title-text {
   font-weight: 700;
   font-size: 14px;
@@ -91,8 +84,7 @@ html,body{
   background: #ff6b6b;
 }
 
-
-/* --- BODY LAYOUT --- */
+/* body layout */
 .body {
   display: flex;
   padding: 12px;
@@ -101,8 +93,7 @@ html,body{
   overflow: hidden;
 }
 
-
-/* --- SIDEBAR --- */
+/* sidebar */
 .sidebar {
   width: 176px;
   background: var(--panel);
@@ -133,8 +124,7 @@ html,body{
   filter: brightness(0.98);
 }
 
-
-/* --- PALETTE --- */
+/* palette */
 .pal-wrap {
   display: flex;
   flex-direction: column;
@@ -160,8 +150,7 @@ html,body{
   border-radius: 3px;
 }
 
-
-/* --- CUSTOM COLOR WHEEL --- */
+/* custom color wheel */
 .customWrap {
   display: flex;
   gap: 8px;
@@ -206,8 +195,7 @@ html,body{
   color: var(--muted);
 }
 
-
-/* --- BRUSH SIZE SLIDER --- */
+/* brush size slider */
 input[type=range] {
   width: 100%;
 }
@@ -218,8 +206,7 @@ input[type=range] {
   text-align: center;
 }
 
-
-/* --- CANVAS AREA --- */
+/* canvas area */
 .canvasArea {
   flex: 1;
   display: flex;
@@ -283,7 +270,7 @@ input[type=range] {
   align-items: center;
   justify-content: center;
   background: rgba(0,0,0,0.35);
-  z-index: 3000; /* Above paint window */
+  z-index: 3000; /* above paint window */
 }
 
 .modal.hidden {
@@ -359,7 +346,7 @@ input[type=range] {
   font-style: italic;
 }
 
-/* Glazing Progress Bar */
+/* glazing progress bar */
 .glazing-progress-container {
   width: 100%;
   padding: 12px;
@@ -418,7 +405,7 @@ input[type=range] {
   z-index: 2001;
 }
 
-/* Intro Overlay - Windows 95/98 Style */
+/* intro overlay */
 @font-face {
   font-family: 'PixelFont';
   src: local('Courier New'), local('monospace');
@@ -468,7 +455,7 @@ input[type=range] {
   position: relative;
 }
 
-/* Windows 95 style title bar */
+/* windows 95 style title bar */
 .intro-content::before {
   content: "we are in a soup";
   display: block;
@@ -577,7 +564,7 @@ input[type=range] {
     inset -2px -2px 0 #ffffff;
 }
 
-/* Table Visit Progress Overlay - Always visible on screen */
+/* table visit progress overlay */
 .table-progress-overlay {
   position: fixed;
   top: 20px;
@@ -620,7 +607,7 @@ input[type=range] {
   text-align: center;
 }
 
-/* Worry Box Styles */
+/* worry box styles */
 .worry-window {
   background: #f9f6f0;
   border: 2px solid #8b7355;
@@ -684,7 +671,7 @@ input[type=range] {
   gap: 8px;
 }
 
-/* Lined notebook effect for textarea */
+/* lined notebook effect for textarea */
 #worryInput {
   background-image: 
     repeating-linear-gradient(
@@ -693,12 +680,6 @@ input[type=range] {
       #8b7355 23px,
       #8b7355 24px
     );
-  background-position: 0 8px;
-  background-size: 100% 24px;
-  padding: 8px 12px !important;
-  line-height: 24px !important;
-  font-size: 13px !important;
-  font-family: "Georgia", serif !important;
   color: #3d2817 !important;
   border: 1px solid #8b7355 !important;
   border-radius: 2px !important;
@@ -781,7 +762,7 @@ input[type=range] {
   font-family: "Georgia", serif;
 }
 
-/* Video Player Overlay */
+/* video overlay */
 .video-overlay {
   position: fixed;
   top: 0;
@@ -793,6 +774,14 @@ input[type=range] {
   align-items: center;
   justify-content: center;
   z-index: 15000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 250ms ease;
+}
+
+.video-overlay.is-visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .video-container {

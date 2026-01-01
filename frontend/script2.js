@@ -1,16 +1,75 @@
+let bgAudio = null;
+let bgAudioFadeRaf = null;
+const BG_AUDIO_TARGET_VOLUME = 0.35;
+const BG_AUDIO_FADE_MS = 250;
+
+function fadeBackgroundAudioVolume(targetVolume, durationMs, { pauseAtEnd = false } = {}) {
+  if (!bgAudio) return;
+  if (bgAudioFadeRaf) cancelAnimationFrame(bgAudioFadeRaf);
+
+  const clamp01 = (v) => Math.min(1, Math.max(0, v));
+
+  const startVol = clamp01(bgAudio.volume);
+  const safeTargetVolume = clamp01(targetVolume);
+  const start = performance.now();
+  const tick = (now) => {
+    const t = Math.min(1, (now - start) / Math.max(1, durationMs));
+    const nextVol = startVol + (safeTargetVolume - startVol) * t;
+    bgAudio.volume = clamp01(nextVol);
+    if (t < 1) {
+      bgAudioFadeRaf = requestAnimationFrame(tick);
+      return;
+    }
+    bgAudioFadeRaf = null;
+    if (pauseAtEnd) {
+      try { bgAudio.pause(); } catch (_) {}
+    }
+  };
+
+  bgAudioFadeRaf = requestAnimationFrame(tick);
+}
+
+function startBackgroundAudio() {
+  if (!bgAudio) {
+    bgAudio = new Audio("./assets/ambient.mp3");
+    bgAudio.loop = true;
+    bgAudio.volume = 0;
+  }
+  bgAudio.play().then(() => {
+    fadeBackgroundAudioVolume(BG_AUDIO_TARGET_VOLUME, BG_AUDIO_FADE_MS);
+  }).catch(() => {});
+}
+
+function pauseBackgroundAudio() {
+  if (!bgAudio || bgAudio.paused) return;
+  fadeBackgroundAudioVolume(0, BG_AUDIO_FADE_MS, { pauseAtEnd: true });
+}
+
+function resumeBackgroundAudio() {
+  if (!bgAudio) return;
+  if (bgAudio.paused) {
+    bgAudio.volume = 0;
+    bgAudio.play().then(() => {
+      fadeBackgroundAudioVolume(BG_AUDIO_TARGET_VOLUME, BG_AUDIO_FADE_MS);
+    }).catch(() => {});
+    return;
+  }
+  fadeBackgroundAudioVolume(BG_AUDIO_TARGET_VOLUME, BG_AUDIO_FADE_MS);
+}
+
 (async () => {
   console.log('We Are In A Soup - v1.2.0');
   const THREE = window.THREE;
   if (!THREE) return;
 
 
-  // Constants
-  // Increase SPEED to compensate for the larger environment so movement doesn't feel slow
+  // constants
+  // movement speed tuned for larger space
   const ROOM = { W: 20, H: 6, D: 20, EYE_HEIGHT: 3.5, SPEED: 15 };
   const PLAYER = { SIZE: new THREE.Vector3(0.5, 1.7, 0.5), RADIUS: 0.3 };
   const SENSITIVITY = 0.002;
   
-  // World boundaries - limit the playable area
+  // world bounds
   const WORLD_BOUNDS = {
     minX: -100,
     maxX: 100,
@@ -20,28 +79,28 @@
     maxY: 50
   };
 
-  // Canvas & Renderer
+  // canvas and renderer
   const canvas = document.getElementById("canvas");
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio || 1);
   renderer.shadowMap.enabled = true;
 
-  // Scene & Camera
+  // scene and camera
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x87CEEB); // Sky blue background
-  // Add fog for better visual polish and to hide distant areas
+  scene.background = new THREE.Color(0x87CEEB); // sky blue
+  // fog helps hide distant geometry
   scene.fog = new THREE.Fog(0x87CEEB, 80, 150);
   const camera = new THREE.PerspectiveCamera(50, 2, 0.1, 500);
   scene.add(camera);
 
-  // Camera controls
+  // camera look
   let yaw = 0, pitch = 0;
 
-  // Soft warm lighting
-  const hemisphereLight = new THREE.HemisphereLight(0xfffacd, 0xffffe0, 0.45); // Soft yellow top and bottom
+  // lighting
+  const hemisphereLight = new THREE.HemisphereLight(0xfffacd, 0xffffe0, 0.45); // soft yellow top and bottom
   scene.add(hemisphereLight);
   
-  const dir = new THREE.DirectionalLight(0xfffacd, 0.35); // Soft yellow directional light
+  const dir = new THREE.DirectionalLight(0xfffacd, 0.35); // soft yellow directional light
   dir.position.set(20, 30, 20);
   dir.castShadow = true;
   dir.shadow.mapSize.width = 2048;
@@ -54,27 +113,27 @@
   dir.shadow.camera.bottom = -100;
   scene.add(dir);
   
-  // Soft warm ambient light
-  scene.add(new THREE.AmbientLight(0xfff5e6, 0.55)); // Warm cream ambient
+  // ambient light
+  scene.add(new THREE.AmbientLight(0xfff5e6, 0.55)); // warm cream ambient
   
   console.log('Added soft warm lighting');
   
-  // Store collider visuals for later cleanup if needed
+  // collider debug visuals
   const colliderVisuals = [];
 
   let model;
-  let meshColliders = []; // Store actual mesh objects for precise collision
+  let meshColliders = []; // store meshes/boxes for collision
   let claytable;
-  let glazingBowl; // Placeholder bowl for glazing
+  let glazingBowl; // placeholder bowl for glazing
   let roomCenter = new THREE.Vector3(0, 0, 0);
   
-  // Table visit tracking - 4 stations: bowl glazing, claytable soup painting, worry box, and kitchen box
+  // table visit tracking
   const TOTAL_TABLES = 4;
   let tablesVisited = 0;
-  window.tablesVisited = 0; // Make globally accessible
+  window.tablesVisited = 0; // global progress
   window.TOTAL_TABLES = TOTAL_TABLES;
 
-  // Proximity dialogue system
+  // proximity dialogue
   const dialogueState = {
     claytable: { shown: false, lastShown: 0, clicked: false },
     glazingBowl: { shown: false, lastShown: 0, clicked: false },
@@ -83,11 +142,11 @@
     endingZone: { shown: false, lastShown: 0 }
   };
   const DIALOGUE_COOLDOWN = 20000; // 20 seconds
-  const PROXIMITY_DISTANCE = 8; // Distance to trigger dialogue
+  const PROXIMITY_DISTANCE = 8; // trigger distance
   
-  // Ending sequence state
+  // ending sequence
   let endingTriggered = false;
-  const ENDING_ZONE = { x: 81, z: -30, radius: 5 }; // Back right area
+  const ENDING_ZONE = { x: 81, z: -30, radius: 5 }; // back right area
 
   try {
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
@@ -100,13 +159,12 @@
       )
     );
     model = gltf.scene;
-    // Make the entire classroom environment even larger (3x)
+    // scale classroom up (3x)
     model.scale.setScalar(3);
     
-    // Add model to scene first so matrix world gets updated
     scene.add(model);
     
-    // Update matrix world to apply transformations
+    // apply transforms
     model.updateMatrixWorld(true);
     
     model.traverse(m => {
@@ -116,7 +174,7 @@
         if (m.material) {
           m.material.roughness = 0.5;
           m.material.metalness = 0.1;
-          // Make room materials mostly white
+          // keep room materials mostly white
           if (!m.name.toLowerCase().includes('coll_')) {
             if (Array.isArray(m.material)) {
               m.material.forEach(mat => {
@@ -129,37 +187,36 @@
             }
           }
         }
-        // Check if this is a collision mesh (name contains "coll_")
-        // Store the actual mesh object for precise geometry-based collision
+        // collision mesh (name contains "coll_")
         const meshName = m.name.toLowerCase();
         if (meshName.includes('coll_')) {
-          meshColliders.push(m); // Store the actual mesh, not just bounding box
+          meshColliders.push(m); // store mesh for collision
           console.log('Found collision mesh:', m.name);
         }
       }
     });
 
-    // If no collision meshes found, create default room boundaries (scaled by 3x)
+    // fallback collisions if blender colliders are missing
     if (meshColliders.length === 0) {
       console.log('No collision meshes found, creating default room boundaries');
-      roomCenter = new THREE.Vector3(0, 9, 0); // Scaled Y position
-      const scale = 3; // Match model scale
+      roomCenter = new THREE.Vector3(0, 9, 0); // scaled y position
+      const scale = 3; // match model scale
       const minX = -10 * scale, maxX = 10 * scale, minY = 0, maxY = 6 * scale, minZ = -10 * scale, maxZ = 10 * scale;
       const thickness = 0.3 * scale;
       
-      // Floor
+      // floor
       meshColliders.push(new THREE.Box3(
         new THREE.Vector3(minX, minY - thickness, minZ),
         new THREE.Vector3(maxX, minY + thickness, maxZ)
       ));
       
-      // Ceiling
+      // ceiling
       meshColliders.push(new THREE.Box3(
         new THREE.Vector3(minX, maxY - thickness, minZ),
         new THREE.Vector3(maxX, maxY + thickness, maxZ)
       ));
       
-      // Four walls
+      // walls
       meshColliders.push(new THREE.Box3(
         new THREE.Vector3(minX, minY, minZ - thickness),
         new THREE.Vector3(maxX, maxY, minZ + thickness)
@@ -185,43 +242,41 @@
       console.log('Using', meshColliders.length, 'collision meshes from Blender');
     }
 
-    // Collider visuals removed
-
-    // Add world boundary collision boxes to limit player movement
+    // world boundary collisions
     const boundaryThickness = 2;
-    // North wall (positive Z)
+    // north wall (+z)
     meshColliders.push(new THREE.Box3(
       new THREE.Vector3(WORLD_BOUNDS.minX, WORLD_BOUNDS.minY, WORLD_BOUNDS.maxZ - boundaryThickness),
       new THREE.Vector3(WORLD_BOUNDS.maxX, WORLD_BOUNDS.maxY, WORLD_BOUNDS.maxZ + boundaryThickness)
     ));
-    // South wall (negative Z)
+    // south wall (-z)
     meshColliders.push(new THREE.Box3(
       new THREE.Vector3(WORLD_BOUNDS.minX, WORLD_BOUNDS.minY, WORLD_BOUNDS.minZ - boundaryThickness),
       new THREE.Vector3(WORLD_BOUNDS.maxX, WORLD_BOUNDS.maxY, WORLD_BOUNDS.minZ + boundaryThickness)
     ));
-    // East wall (positive X)
+    // east wall (+x)
     meshColliders.push(new THREE.Box3(
       new THREE.Vector3(WORLD_BOUNDS.maxX - boundaryThickness, WORLD_BOUNDS.minY, WORLD_BOUNDS.minZ),
       new THREE.Vector3(WORLD_BOUNDS.maxX + boundaryThickness, WORLD_BOUNDS.maxY, WORLD_BOUNDS.maxZ)
     ));
-    // West wall (negative X)
+    // west wall (-x)
     meshColliders.push(new THREE.Box3(
       new THREE.Vector3(WORLD_BOUNDS.minX - boundaryThickness, WORLD_BOUNDS.minY, WORLD_BOUNDS.minZ),
       new THREE.Vector3(WORLD_BOUNDS.minX + boundaryThickness, WORLD_BOUNDS.maxY, WORLD_BOUNDS.maxZ)
     ));
     console.log('Added world boundary collision boxes');
 
-    // Calculate room's bounding box to find floor level and center position
+    // room bounds
     const roomBox = new THREE.Box3().setFromObject(model);
     const roomMinY = roomBox.min.y;
     const roomCenter = new THREE.Vector3();
     roomBox.getCenter(roomCenter);
     
-    // Add green floor for room
+    // floor
     const floorSize = 120;
     const floorGeometry = new THREE.PlaneGeometry(floorSize, floorSize);
     const floorMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0xa8c5a0, // Green floor
+      color: 0xa8c5a0, // green floor
       roughness: 0.8,
       metalness: 0.1
     });
@@ -234,9 +289,9 @@
   } catch (err) {
     console.error('Failed to load classroom.glb, using fallback box');
     model = new THREE.Mesh(
-      // 3x larger fallback room
+      // fallback room
       new THREE.BoxGeometry(60, 18, 60),
-      new THREE.MeshStandardMaterial({ color: 0xffffff }) // White fallback room
+      new THREE.MeshStandardMaterial({ color: 0xffffff }) // white fallback room
     );
     model.position.set(0, 3, 0);
     scene.add(model);
@@ -244,7 +299,7 @@
     meshColliders.push(box);
   }
 
-  // Load claytable
+  // load claytable
   try {
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
     const claytableGltf = await new Promise((res, rej) =>
@@ -259,7 +314,7 @@
     claytable.position.set(81, -2.5, -30);
     claytable.scale.setScalar(0.8);
     
-    // Update world matrix for collision detection
+    // apply transforms
     claytable.updateMatrixWorld(true);
     
     claytable.traverse(m => {
@@ -274,9 +329,9 @@
     });
     scene.add(claytable);
     
-    // Add claytable to collision system with taller collision box
+    // claytable collisions
     const claytableBounds = new THREE.Box3().setFromObject(claytable);
-    claytableBounds.max.y += 3; // Make collision taller for camera
+    claytableBounds.max.y += 3; // taller collision for camera
     meshColliders.push(claytableBounds);
     console.log('Added claytable to collision system');
         
@@ -287,105 +342,102 @@
       new THREE.MeshStandardMaterial({ color: 0x8b4513 })
     );
     claytable.position.set(0, 0.1, 0);
-    // Larger fallback table
+    // larger fallback table
     claytable.scale.setScalar(0.3);
     scene.add(claytable);
     
-    // Add fallback claytable to collision system
+    // fallback collisions
     meshColliders.push(claytable);
     console.log('Added fallback claytable to collision system');
   }
 
-  // Add placeholder glazing bowl on top of claytable (will be replaced with GLB later)
+  // placeholder glazing bowl
   try {
-    // Get claytable position to place bowl on top
+    // get claytable position
     const tableBox = new THREE.Box3().setFromObject(claytable);
     const tableTop = tableBox.max.y;
     const tableCenter = new THREE.Vector3();
     tableBox.getCenter(tableCenter);
     
-    // Create a realistic ceramic bowl shape using LatheGeometry
+    // ceramic bowl shape
     const points = [];
-    // Create a bowl profile: starts wide at top, curves down, narrow at bottom
-    // (radius, y) coordinates for the profile that will be rotated
-    points.push(new THREE.Vector2(0.8, 0.0));   // Top rim, wider
-    points.push(new THREE.Vector2(0.75, 0.15)); // Curve down
-    points.push(new THREE.Vector2(0.6, 0.4));   // Bowl wall
-    points.push(new THREE.Vector2(0.5, 0.6));   // More curve
-    points.push(new THREE.Vector2(0.45, 0.75)); // Lower curve
-    points.push(new THREE.Vector2(0.4, 0.95));  // Bottom, narrow
+    points.push(new THREE.Vector2(0.8, 0.0));
+    points.push(new THREE.Vector2(0.75, 0.15));
+    points.push(new THREE.Vector2(0.6, 0.4));
+    points.push(new THREE.Vector2(0.5, 0.6));
+    points.push(new THREE.Vector2(0.45, 0.75));
+    points.push(new THREE.Vector2(0.4, 0.95));
     
-    // Create outer bowl geometry
-    const bowlGeometry = new THREE.LatheGeometry(points, 32); // 32 segments around
+    // outer bowl geometry
+    const bowlGeometry = new THREE.LatheGeometry(points, 32);
     
-    // Create inner bowl geometry (slightly smaller for inside surface)
+    // inner bowl geometry
     const innerPoints = [];
-    innerPoints.push(new THREE.Vector2(0.75, 0.05));   // Top rim, slightly inset
-    innerPoints.push(new THREE.Vector2(0.7, 0.2));     // Curve down
-    innerPoints.push(new THREE.Vector2(0.55, 0.45));   // Bowl wall
-    innerPoints.push(new THREE.Vector2(0.45, 0.65));   // More curve
-    innerPoints.push(new THREE.Vector2(0.4, 0.8));     // Lower curve
-    innerPoints.push(new THREE.Vector2(0.38, 0.95));   // Bottom, slightly inset
+    innerPoints.push(new THREE.Vector2(0.75, 0.05));
+    innerPoints.push(new THREE.Vector2(0.7, 0.2));
+    innerPoints.push(new THREE.Vector2(0.55, 0.45));
+    innerPoints.push(new THREE.Vector2(0.45, 0.65));
+    innerPoints.push(new THREE.Vector2(0.4, 0.8));
+    innerPoints.push(new THREE.Vector2(0.38, 0.95));
     
     const innerBowlGeometry = new THREE.LatheGeometry(innerPoints, 32);
     
-    // Create a canvas texture for painting on the bowl
+    // canvas texture for painting
     const textureSize = 512;
     const bowlTextureCanvas = document.createElement('canvas');
     bowlTextureCanvas.width = textureSize;
     bowlTextureCanvas.height = textureSize;
     const bowlTextureCtx = bowlTextureCanvas.getContext('2d');
     
-    // Fill with cream/tan ceramic color
+    // base ceramic color
     bowlTextureCtx.fillStyle = '#d4c5a9';
     bowlTextureCtx.fillRect(0, 0, textureSize, textureSize);
     
-    // Add blue stripe around the rim (top portion)
+    // blue stripe at rim
     bowlTextureCtx.fillStyle = '#1e3a8a';
-    bowlTextureCtx.fillRect(0, 0, textureSize, textureSize * 0.15); // Blue stripe at top
+    bowlTextureCtx.fillRect(0, 0, textureSize, textureSize * 0.15); // blue stripe at top
     
     const bowlTexture = new THREE.CanvasTexture(bowlTextureCanvas);
     bowlTexture.needsUpdate = true;
     
-    // Ceramic material properties: slightly glossy, not metallic
+    // ceramic material
     const bowlMaterial = new THREE.MeshStandardMaterial({ 
       map: bowlTexture,
-      roughness: 0.5,  // Ceramic is semi-gloss
-      metalness: 0.0   // No metalness, pure ceramic
+      roughness: 0.5,  // ceramic is semi-gloss
+      metalness: 0.0   // no metalness
     });
     
-    // Create outer bowl
+    // outer bowl
     const outerBowl = new THREE.Mesh(bowlGeometry, bowlMaterial);
     
-    // Create inner bowl material (slightly darker for inside)
+    // inner bowl
     const innerMaterial = new THREE.MeshStandardMaterial({
-      color: 0xc9b899,  // Slightly darker ceramic color for inside
+      color: 0xc9b899,  // slightly darker ceramic inside
       roughness: 0.5,
       metalness: 0.0,
-      side: THREE.DoubleSide  // Render both sides so we can see the inside
+      side: THREE.DoubleSide  // render both sides
     });
     const innerBowl = new THREE.Mesh(innerBowlGeometry, innerMaterial);
     
-    // Create a group to hold both outer and inner bowl
+    // bowl group
     glazingBowl = new THREE.Group();
     glazingBowl.add(outerBowl);
     glazingBowl.add(innerBowl);
     
-    // Position bowl on top of claytable, centered
-    // Bowl height is ~1.0 units, position it on the table
+    // position bowl on table
     glazingBowl.position.set(tableCenter.x, tableTop + 1.0, tableCenter.z);
-    glazingBowl.rotation.x = Math.PI; // Flip bowl right-side up
+    glazingBowl.rotation.x = Math.PI; // flip bowl upright
     glazingBowl.castShadow = true;
     glazingBowl.receiveShadow = true;
     
-    // Store texture canvas and context for painting
+    // store texture context
     glazingBowl.userData.textureCanvas = bowlTextureCanvas;
     glazingBowl.userData.textureContext = bowlTextureCtx;
     glazingBowl.userData.texture = bowlTexture;
     
     scene.add(glazingBowl);
     
-    // Make bowl globally accessible for glazing system
+    // expose bowl globally
     window.glazingBowl = glazingBowl;
     
     console.log('Added glazing bowl on top of claytable');
@@ -393,7 +445,7 @@
     console.error('Failed to create glazing bowl:', err);
   }
 
-  // Load kitchen table.glb for worry box station
+  // load kitchen table glb for worry box station
   let worryBox;
   try {
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
@@ -407,16 +459,15 @@
     );
     worryBox = gltf.scene;
     
-    // Scale up the table to make it more visible
+    // scale up table
     worryBox.scale.set(4, 4, 4);
     
-    // Position kitchen table in the scene (closer to player spawn for visibility)
-    // Player starts at (70, 3.5, 10), so put table right next to them
+    // place near spawn
     worryBox.position.set(58, -1.5, -15);
     worryBox.castShadow = true;
     worryBox.receiveShadow = true;
     
-    // Enable shadows for all meshes in the model
+    // enable shadows
     worryBox.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true;
@@ -426,35 +477,35 @@
     
     scene.add(worryBox);
     
-    // Add to collision system with taller collision box
+    // collision box
     const worryBoxBounds = new THREE.Box3().setFromObject(worryBox);
     const tableTop = worryBoxBounds.max.y;
-    worryBoxBounds.max.y += 3; // Make collision taller for camera
+    worryBoxBounds.max.y += 3; // taller collision for camera
     meshColliders.push(worryBoxBounds);
     
-    // Create canvas for text
+    // text canvas
     const chitCanvas = document.createElement('canvas');
     chitCanvas.width = 512;
     chitCanvas.height = 256;
     const chitCtx = chitCanvas.getContext('2d');
     
-    // Draw chit background (cream/beige paper)
+    // chit background
     chitCtx.fillStyle = '#fffacd';
     chitCtx.fillRect(0, 0, 512, 256);
     
-    // Add slight texture/border
+    // border
     chitCtx.strokeStyle = '#d4a574';
     chitCtx.lineWidth = 4;
     chitCtx.strokeRect(0, 0, 512, 256);
     
-    // Draw text
+    // text
     chitCtx.fillStyle = '#3d2817';
     chitCtx.font = 'italic bold 48px Georgia, serif';
     chitCtx.textAlign = 'center';
     chitCtx.textBaseline = 'middle';
     chitCtx.fillText('holding space', 256, 128);
     
-    // Create texture and material
+    // texture and material
     const chitTexture = new THREE.CanvasTexture(chitCanvas);
     const chitMaterial = new THREE.MeshStandardMaterial({
       map: chitTexture,
@@ -462,11 +513,11 @@
       side: THREE.DoubleSide
     });
     
-    // Create plane for chit
+    // chit plane
     const chitGeometry = new THREE.PlaneGeometry(1.5, 0.75);
     const chit = new THREE.Mesh(chitGeometry, chitMaterial);
     chit.position.set(worryBox.position.x+3.5, tableTop + 0.05, worryBox.position.z+1);
-    chit.rotation.x = -Math.PI / 2; // Lay flat on table
+    chit.rotation.x = -Math.PI / 2; // lay flat on table
     chit.receiveShadow = true;
     scene.add(chit);
     
@@ -475,7 +526,7 @@
     console.error('Failed to load kitchen table.glb for worry box:', err);
   }
 
-  // Load kitchen table 2.glb for kitchen setup station
+  // load kitchen table 2 glb for kitchen setup station
   let kitchenBox;
   try {
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
@@ -489,15 +540,15 @@
     );
     kitchenBox = gltf.scene;
     
-    // Scale up the table to make it more visible
+    // scale up table
     kitchenBox.scale.set(3.5, 3.5, 3.5);
     
-    // Position kitchen table further back and to the right
+    // position kitchen table
     kitchenBox.position.set(80, -1.5, -9);
     kitchenBox.castShadow = true;
     kitchenBox.receiveShadow = true;
     
-    // Enable shadows for all meshes in the model
+    // enable shadows
     kitchenBox.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true;
@@ -507,22 +558,21 @@
     
     scene.add(kitchenBox);
     
-    // Add to collision system with taller collision box
+    // collision box
     const kitchenBoxBounds = new THREE.Box3().setFromObject(kitchenBox);
-    kitchenBoxBounds.max.y += 3; // Make collision taller for camera
+    kitchenBoxBounds.max.y += 3; // taller collision for camera
     meshColliders.push(kitchenBoxBounds);
     
-    // Add induction cooktop on the table
+    // induction cooktop
     const inductionGeometry = new THREE.BoxGeometry(0.8, 0.05, 0.8);
     const inductionMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0x1a1a1a, // Dark grey/black for induction
+      color: 0x1a1a1a, // dark grey/black for induction
       roughness: 0.3,
       metalness: 0.7
     });
     const induction = new THREE.Mesh(inductionGeometry, inductionMaterial);
     
-    // Position induction on top of the table
-    // Get table bounding box to place induction on top
+    // position induction on table
     const tableBox = new THREE.Box3().setFromObject(kitchenBox);
     const tableHeight = tableBox.max.y;
     induction.position.set(83, tableHeight + 0.025, -8);
@@ -530,10 +580,10 @@
     induction.receiveShadow = true;
     scene.add(induction);
     
-    // Add soup pot on the induction - opaque pot with visible soup on top
+    // soup pot
     const potGeometry = new THREE.CylinderGeometry(0.5, 0.45, 0.6, 32);
     const potMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0x606060, // Dark grey for pot
+      color: 0x606060, // dark grey for pot
       roughness: 0.5,
       metalness: 0.7
     });
@@ -543,17 +593,17 @@
     pot.receiveShadow = true;
     scene.add(pot);
     
-    // Add soup liquid visible at the top of the pot
+    // soup liquid
     const soupGeometry = new THREE.CylinderGeometry(0.48, 0.48, 0.02, 32);
     const soupMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0xd4a574, // Soup color (brownish)
+      color: 0xd4a574, // soup color (brownish)
       roughness: 0.9,
       metalness: 0.0,
       emissive: 0xd4a574,
       emissiveIntensity: 0.4
     });
     const soup = new THREE.Mesh(soupGeometry, soupMaterial);
-    soup.position.set(83, tableHeight + 0.025 + 0.59, -8); // Just below pot rim
+    soup.position.set(83, tableHeight + 0.025 + 0.59, -8); // just below pot rim
     scene.add(soup);
     
     console.log('Added kitchen table 2 with induction and soup pot at position:', kitchenBox.position);
@@ -561,24 +611,23 @@
     console.error('Failed to load kitchen table 2.glb:', err);
   }
 
-  // Create a subtle glowing plane on the wall surface
-  // Match wall dimensions and position it directly on the wall
-  const glowPlaneGeometry = new THREE.PlaneGeometry(15, 12); // Larger to match wall section
+  // wall glow
+  const glowPlaneGeometry = new THREE.PlaneGeometry(15, 12); // sized for wall section
   const glowPlaneMaterial = new THREE.MeshBasicMaterial({
-    color: 0xffffaa, // Softer yellow
+    color: 0xffffaa, // softer yellow
     transparent: true,
     opacity: 0,
     side: THREE.DoubleSide
   });
   const glowPlane = new THREE.Mesh(glowPlaneGeometry, glowPlaneMaterial);
   
-  // Position directly on the wall surface (adjust Z to be flush with wall)
+  // position on wall
   glowPlane.position.set(ENDING_ZONE.x, 4, ENDING_ZONE.z + 0.1);
-  glowPlane.rotation.y = Math.PI / 2; // Face outward from wall
+  glowPlane.rotation.y = Math.PI / 2; // face outward from wall
   scene.add(glowPlane);
   window.glowPlane = glowPlane;
   
-  // Single subtle point light for soft glow
+  // glow light
   const glowLight = new THREE.PointLight(0xffffaa, 0, 20);
   glowLight.position.set(ENDING_ZONE.x, 4, ENDING_ZONE.z);
   scene.add(glowLight);
@@ -586,7 +635,7 @@
   
   console.log('Wall glow plane created at position:', glowPlane.position);
 
-  // Create text-based recipe cards on back wall - very tight spacing
+  // recipe cards
   const recipeCards = [
     { name: 'Tomato Soup', x: -2.5, y: 6.5, color: 0xffcccc, border: 0xff6666 },
     { name: 'Bassaru', x: -1.2, y: 7.2, color: 0xccffff, border: 0x6666ff },
@@ -603,7 +652,7 @@
     { name: 'Huli', x: 1.5, y: 3.2, color: 0xffffee, border: 0x6666ff }
   ];
 
-  // Store recipe card meshes for click detection
+  // recipe cards for click detection
   window.recipeCardMeshes = [];
 
   // Position cards on the back wall, moved forward
@@ -826,13 +875,15 @@
   };
   
   const enableControls = () => {
-    controlsEnabled = true;
-    if (introOverlay) {
-      introOverlay.classList.remove('visible');
-      introOverlay.classList.add('hidden');
-    }
-    // Keep cursor visible (no pointer lock) so it can be customized later
-  };
+  controlsEnabled = true;
+  startBackgroundAudio();
+
+  if (introOverlay) {
+    introOverlay.classList.remove('visible');
+    introOverlay.classList.add('hidden');
+  }
+};
+
 
   if (startButton) {
     startButton.addEventListener('click', enableControls);
@@ -985,6 +1036,7 @@
       if (videoIntersects.length > 0) {
         // Show video player overlay
         showVideoOverlay();
+        pauseBackgroundAudio();
       }
     }
   });
@@ -1141,26 +1193,67 @@
     overlay.style.display = 'flex';
   }
 
-  // Function to show video overlay
+  // show video overlay
   function showVideoOverlay() {
     const videoOverlay = document.getElementById('videoOverlay');
     const iframe = document.getElementById('wallVideo');
     
     if (videoOverlay && iframe) {
       videoOverlay.style.display = 'flex';
-      // YouTube iframe will autoplay when loaded with autoplay parameter
-      // Reload iframe to trigger autoplay
-      const currentSrc = iframe.src;
-      iframe.src = currentSrc + '&autoplay=1';
+      requestAnimationFrame(() => {
+        videoOverlay.classList.add('is-visible');
+      });
+
+      // reload iframe to trigger autoplay
+      const baseSrc = iframe.dataset.baseSrc || iframe.src;
+      iframe.dataset.baseSrc = baseSrc;
+      try {
+        const url = new URL(baseSrc);
+        url.searchParams.set('autoplay', '1');
+        iframe.src = url.toString();
+      } catch (_) {
+        iframe.src = baseSrc.includes('autoplay=') ? baseSrc : (baseSrc + (baseSrc.includes('?') ? '&' : '?') + 'autoplay=1');
+      }
     }
   }
 
-  // Close video overlay functionality - completely rewritten
+  // close video overlay
   function initVideoClose() {
     console.log('Initializing video close functionality...');
     
     const closeVideoBtn = document.getElementById('closeVideo');
     const videoOverlay = document.getElementById('videoOverlay');
+    const closeVideoOverlay = () => {
+      const iframe = document.getElementById('wallVideo');
+      if (iframe) {
+        try {
+          iframe.contentWindow?.postMessage(
+            '{"event":"command","func":"stopVideo","args":""}',
+            '*'
+          );
+        } catch (_) {}
+
+        const baseSrc = iframe.dataset.baseSrc || iframe.src;
+        iframe.dataset.baseSrc = baseSrc;
+        try {
+          const url = new URL(baseSrc);
+          url.searchParams.delete('autoplay');
+          iframe.src = url.toString();
+        } catch (_) {
+          iframe.src = baseSrc;
+        }
+      }
+
+      if (videoOverlay) {
+        videoOverlay.classList.remove('is-visible');
+        window.setTimeout(() => {
+          videoOverlay.style.display = 'none';
+          resumeBackgroundAudio();
+        }, 260);
+      } else {
+        resumeBackgroundAudio();
+      }
+    };
     
     console.log('Elements found:', {
       closeVideoBtn: !!closeVideoBtn,
@@ -1175,7 +1268,7 @@
       // Simple direct close
       newCloseBtn.onclick = function() {
         console.log('Close button clicked!');
-        videoOverlay.style.display = 'none';
+        closeVideoOverlay();
         return false;
       };
       
@@ -1183,17 +1276,20 @@
       videoOverlay.onclick = function(e) {
         if (e.target === videoOverlay) {
           console.log('Background clicked, closing overlay');
-          videoOverlay.style.display = 'none';
+          closeVideoOverlay();
         }
       };
       
       // ESC key close
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && videoOverlay.style.display === 'flex') {
-          console.log('ESC pressed, closing overlay');
-          videoOverlay.style.display = 'none';
-        }
-      });
+      if (!window._videoOverlayKeydownHandler) {
+        window._videoOverlayKeydownHandler = function(e) {
+          if (e.key === 'Escape' && videoOverlay.classList.contains('is-visible')) {
+            console.log('ESC pressed, closing overlay');
+            closeVideoOverlay();
+          }
+        };
+        document.addEventListener('keydown', window._videoOverlayKeydownHandler);
+      }
       
       console.log('Video close functionality initialized');
     } else {
