@@ -820,3 +820,13 @@ input[type=range] {
 .close-video-btn:hover {
   background: #fff;
 }
+
+/* Pulse animation for glowing objects */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}

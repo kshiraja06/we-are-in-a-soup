@@ -148,6 +148,38 @@ function resumeBackgroundAudio() {
   let endingTriggered = false;
   const ENDING_ZONE = { x: 81, z: -30, radius: 5 }; // back right area
 
+  // Helper to apply glow effect to mesh objects
+  const applyGlowToObject = (obj, glowColor = 0xffcc00, glowIntensity = 0.5) => {
+    obj.traverse(mesh => {
+      if (mesh.isMesh && mesh.material) {
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach(mat => {
+            mat.emissive = new THREE.Color(glowColor);
+            mat.emissiveIntensity = glowIntensity;
+          });
+        } else {
+          mesh.material.emissive = new THREE.Color(glowColor);
+          mesh.material.emissiveIntensity = glowIntensity;
+        }
+      }
+    });
+  };
+
+  // Helper to remove glow effect
+  const removeGlowFromObject = (obj) => {
+    obj.traverse(mesh => {
+      if (mesh.isMesh && mesh.material) {
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach(mat => {
+            mat.emissiveIntensity = 0;
+          });
+        } else {
+          mesh.material.emissiveIntensity = 0;
+        }
+      }
+    });
+  };
+
   try {
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
     const gltf = await new Promise((res, rej) =>
@@ -635,6 +667,98 @@ function resumeBackgroundAudio() {
   
   console.log('Wall glow plane created at position:', glowPlane.position);
 
+  // Create about poster with cute pastel design
+  try {
+    const posterWidth = 3.5;
+    const posterHeight = 2.1;
+    const posterGeometry = new THREE.PlaneGeometry(posterWidth, posterHeight);
+    
+    // Create canvas texture for poster
+    const posterCanvas = document.createElement('canvas');
+    posterCanvas.width = 512;
+    posterCanvas.height = 300;
+    const posterCtx = posterCanvas.getContext('2d');
+    
+    // Colorful patchwork background
+    const colors = [
+      '#fde2e4', '#e0f2dd', '#fef3c7', '#fecdd3',
+      '#fed7aa', '#fcdab7', '#f9e2af', '#fef08a',
+      '#d8aed8', '#c68f9b', '#fbcfe8', '#f8e7f0',
+      '#cffafe', '#a5f3fc', '#bfdbfe', '#dbeafe'
+    ];
+    
+    // Fill with patchwork squares
+    const blockSize = 60;
+    let colorIndex = 0;
+    for (let x = 0; x < posterCanvas.width; x += blockSize) {
+      for (let y = 0; y < posterCanvas.height; y += blockSize) {
+        posterCtx.fillStyle = colors[colorIndex % colors.length];
+        posterCtx.fillRect(x, y, blockSize, blockSize);
+        colorIndex++;
+      }
+    }
+    
+    // Draw large central star shape
+    const drawLargeStar = () => {
+      posterCtx.fillStyle = '#fef08a';
+      posterCtx.strokeStyle = '#92400e';
+      posterCtx.lineWidth = 3;
+      
+      const centerX = 256;
+      const centerY = 150;
+      const outerRadius = 90;
+      const innerRadius = 40;
+      
+      posterCtx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+        const angle = (i * Math.PI) / 5 - Math.PI / 2;
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+        if (i === 0) posterCtx.moveTo(x, y);
+        else posterCtx.lineTo(x, y);
+      }
+      posterCtx.closePath();
+      posterCtx.fill();
+      posterCtx.stroke();
+    };
+    
+    drawLargeStar();
+    
+    // Text inside star
+    posterCtx.fillStyle = '#1a1a1a';
+    posterCtx.font = 'bold 28px "Instrument Serif", serif';
+    posterCtx.textAlign = 'center';
+    posterCtx.textBaseline = 'middle';
+    posterCtx.fillText('we are in', 256, 135);
+    posterCtx.fillText('a soup', 256, 165);
+    
+    const posterTexture = new THREE.CanvasTexture(posterCanvas);
+    posterTexture.magFilter = THREE.LinearFilter;
+    posterTexture.minFilter = THREE.LinearFilter;
+    
+    const posterMaterial = new THREE.MeshStandardMaterial({
+      map: posterTexture,
+      roughness: 0.7,
+      metalness: 0
+    });
+    
+    const aboutPoster = new THREE.Mesh(posterGeometry, posterMaterial);
+    
+    // Position poster on right side of wall (next to video)
+    aboutPoster.position.set(60, 5, -25);
+    aboutPoster.rotation.y = Math.PI / 2; // face into room
+    aboutPoster.castShadow = true;
+    aboutPoster.receiveShadow = true;
+    
+    scene.add(aboutPoster);
+    window.aboutPoster = aboutPoster;
+    
+    console.log('Added about poster to scene at position:', aboutPoster.position);
+  } catch (err) {
+    console.error('Failed to create about poster:', err);
+  }
+
   // recipe cards
   const recipeCards = [
     { name: 'Tomato Soup', x: -2.5, y: 6.5, color: 0xffcccc, border: 0xff6666 },
@@ -709,8 +833,8 @@ function resumeBackgroundAudio() {
   
   console.log('Added', recipeCards.length, 'recipe card placeholders on back wall');
 
-  // Create video frame on wall
-  const videoFrameGeometry = new THREE.PlaneGeometry(12, 7);
+  // Create video frame on wall (smaller)
+  const videoFrameGeometry = new THREE.PlaneGeometry(3.5, 2.1);
   
   // Create canvas for text texture
   const videoCanvas = document.createElement('canvas');
@@ -743,8 +867,8 @@ function resumeBackgroundAudio() {
   });
   const videoFrame = new THREE.Mesh(videoFrameGeometry, videoFrameMaterial);
   
-  // Position video frame on left wall (facing right into room) - moved more to the right
-  videoFrame.position.set(60, 6, -20);
+  // Position video frame on left side of wall
+  videoFrame.position.set(60, 6, -18);
   videoFrame.rotation.y = Math.PI / 2; // Face right into room
   videoFrame.receiveShadow = true;
   
@@ -935,12 +1059,25 @@ function resumeBackgroundAudio() {
           }
         }
         
-        const w = document.getElementById("paintWindow");
-        console.log('Paint window element:', w);
+        const w = document.getElementById("cookingWindow");
+        console.log('Cooking window element:', w);
         if (w) {
           w.style.display = "flex";
           w.classList.remove("hidden-init");
-          setTimeout(() => window.initializeCanvas?.(), 10);
+          // Close button handler
+          const closeBtn = document.getElementById("cookingCloseBtn");
+          if (closeBtn) {
+            closeBtn.onclick = () => {
+              w.style.display = "none";
+            };
+          }
+          // Done cooking button
+          const doneBtn = document.getElementById("cookingDoneBtn");
+          if (doneBtn) {
+            doneBtn.onclick = () => {
+              w.style.display = "none";
+            };
+          }
         }
       }
     }
@@ -1015,6 +1152,26 @@ function resumeBackgroundAudio() {
         
         // Open kitchen setup page in new window
         window.open('./kitchen-setup.html', '_blank');
+      }
+    }
+
+    // Check if clicking on about poster
+    if (window.aboutPoster) {
+      const intersects = raycaster.intersectObject(window.aboutPoster, true);
+      if (intersects.length) {
+        const aboutWindow = document.getElementById("aboutWindow");
+        if (aboutWindow) {
+          aboutWindow.style.display = "flex";
+          aboutWindow.classList.remove("hidden-init");
+          
+          // Close button handler
+          const closeBtn = document.getElementById("aboutCloseBtn");
+          if (closeBtn) {
+            closeBtn.onclick = () => {
+              aboutWindow.style.display = "none";
+            };
+          }
+        }
       }
     }
 
@@ -1402,6 +1559,18 @@ function resumeBackgroundAudio() {
     
     const now = Date.now();
     
+    // Check claytable proximity and apply glow
+    if (claytable && !dialogueState.claytable.clicked) {
+      const tablePos = new THREE.Vector3(claytable.position.x, claytable.position.y, claytable.position.z);
+      const dist = player.distanceTo(tablePos);
+      
+      if (dist < PROXIMITY_DISTANCE) {
+        applyGlowToObject(claytable, 0xffcc66, 0.6);
+      } else {
+        removeGlowFromObject(claytable);
+      }
+    }
+    
     // Only show dialogue for glazing bowl
     if (glazingBowl && !dialogueState.glazingBowl.clicked) {
       const bowlPos = new THREE.Vector3();
@@ -1409,11 +1578,61 @@ function resumeBackgroundAudio() {
       const dist = player.distanceTo(bowlPos);
       
       if (dist < PROXIMITY_DISTANCE) {
+        applyGlowToObject(glazingBowl, 0x66ccff, 0.5);
         if (!dialogueState.glazingBowl.shown || (now - dialogueState.glazingBowl.lastShown > DIALOGUE_COOLDOWN)) {
           showDialogue("click the bowl!", 1000);
           dialogueState.glazingBowl.shown = true;
           dialogueState.glazingBowl.lastShown = now;
         }
+      } else {
+        removeGlowFromObject(glazingBowl);
+      }
+    }
+    
+    // Check worry box proximity
+    if (worryBox && !dialogueState.worryBox.clicked) {
+      const worryPos = new THREE.Vector3();
+      worryBox.getWorldPosition(worryPos);
+      const dist = player.distanceTo(worryPos);
+      
+      if (dist < PROXIMITY_DISTANCE) {
+        applyGlowToObject(worryBox, 0xff99cc, 0.5);
+      } else {
+        removeGlowFromObject(worryBox);
+      }
+    }
+    
+    // Check kitchen box proximity
+    if (kitchenBox && !dialogueState.kitchenBox.clicked) {
+      const kitchenPos = new THREE.Vector3();
+      kitchenBox.getWorldPosition(kitchenPos);
+      const dist = player.distanceTo(kitchenPos);
+      
+      if (dist < PROXIMITY_DISTANCE) {
+        applyGlowToObject(kitchenBox, 0x99ff99, 0.5);
+      } else {
+        removeGlowFromObject(kitchenBox);
+      }
+    }
+    
+    // Check about poster proximity
+    if (window.aboutPoster) {
+      const posterPos = new THREE.Vector3();
+      window.aboutPoster.getWorldPosition(posterPos);
+      const dist = player.distanceTo(posterPos);
+      
+      if (dist < PROXIMITY_DISTANCE) {
+        applyGlowToObject(window.aboutPoster, 0xffaa88, 0.15);
+        if (!dialogueState.aboutPoster || !dialogueState.aboutPoster.shown || (now - (dialogueState.aboutPoster.lastShown || 0) > DIALOGUE_COOLDOWN)) {
+          showDialogue("click to learn about us", 1200);
+          if (!dialogueState.aboutPoster) {
+            dialogueState.aboutPoster = { shown: false, lastShown: 0 };
+          }
+          dialogueState.aboutPoster.shown = true;
+          dialogueState.aboutPoster.lastShown = now;
+        }
+      } else {
+        removeGlowFromObject(window.aboutPoster);
       }
     }
     
