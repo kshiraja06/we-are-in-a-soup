@@ -57,6 +57,49 @@ function resumeBackgroundAudio() {
   fadeBackgroundAudioVolume(BG_AUDIO_TARGET_VOLUME, BG_AUDIO_FADE_MS);
 }
 
+// Loading screen management
+let loadingProgress = 0;
+const setLoadingProgress = (progress) => {
+  loadingProgress = Math.min(progress, 100);
+  const bar = document.getElementById('loadingBar');
+  if (bar) bar.style.width = loadingProgress + '%';
+};
+
+const hideLoadingScreen = () => {
+  const loadingScreen = document.getElementById('loadingScreen');
+  const canvas = document.getElementById('canvas');
+  const introOverlay = document.getElementById('introOverlay');
+  const tableProgressOverlay = document.getElementById('tableProgressOverlay');
+  
+  if (loadingScreen && canvas) {
+    // Fade out loading screen
+    loadingScreen.style.transition = 'opacity 0.5s ease';
+    loadingScreen.style.opacity = '0';
+    // Fade in canvas
+    canvas.style.transition = 'opacity 0.5s ease';
+    canvas.style.opacity = '1';
+    setTimeout(() => {
+      loadingScreen.style.display = 'none';
+      // Show UI elements after loading screen is hidden
+      if (introOverlay) {
+        introOverlay.classList.add('visible');
+      }
+      if (tableProgressOverlay) {
+        tableProgressOverlay.style.display = 'block';
+      }
+    }, 500);
+  }
+};
+
+// Ensure everything is hidden during loading
+const initializeForLoading = () => {
+  document.body.style.background = '#222';
+  const loadingScreen = document.getElementById('loadingScreen');
+  if (loadingScreen) loadingScreen.style.display = 'flex';
+};
+
+initializeForLoading();
+
 (async () => {
   console.log('We Are In A Soup - v1.2.0');
   const THREE = window.THREE;
@@ -181,6 +224,7 @@ function resumeBackgroundAudio() {
   };
 
   try {
+    setLoadingProgress(10);
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
     const gltf = await new Promise((res, rej) =>
       new GLTFLoader().load(
@@ -318,6 +362,7 @@ function resumeBackgroundAudio() {
     floor.receiveShadow = true;
     scene.add(floor);
     console.log('Added green floor at room center:', roomCenter, 'floor level:', roomMinY);
+    setLoadingProgress(40);
   } catch (err) {
     console.error('Failed to load classroom.glb, using fallback box');
     model = new THREE.Mesh(
@@ -333,6 +378,7 @@ function resumeBackgroundAudio() {
 
   // load claytable
   try {
+    setLoadingProgress(45);
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
     const claytableGltf = await new Promise((res, rej) =>
       new GLTFLoader().load(
@@ -366,6 +412,7 @@ function resumeBackgroundAudio() {
     claytableBounds.max.y += 3; // taller collision for camera
     meshColliders.push(claytableBounds);
     console.log('Added claytable to collision system');
+    setLoadingProgress(60);
         
   } catch (err) {
     console.error('Failed to load claytable.glb');
@@ -480,6 +527,7 @@ function resumeBackgroundAudio() {
   // load kitchen table glb for worry box station
   let worryBox;
   try {
+    setLoadingProgress(65);
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
     const gltf = await new Promise((res, rej) =>
       new GLTFLoader().load(
@@ -554,6 +602,7 @@ function resumeBackgroundAudio() {
     scene.add(chit);
     
     console.log('Added kitchen table (worry box) with "holding space" chit at position:', worryBox.position);
+    setLoadingProgress(75);
   } catch (err) {
     console.error('Failed to load kitchen table.glb for worry box:', err);
   }
@@ -561,6 +610,7 @@ function resumeBackgroundAudio() {
   // load kitchen table 2 glb for kitchen setup station
   let kitchenBox;
   try {
+    setLoadingProgress(80);
     const GLTFLoader = window.THREE.GLTFLoader || window.GLTFLoader;
     const gltf = await new Promise((res, rej) =>
       new GLTFLoader().load(
@@ -639,6 +689,7 @@ function resumeBackgroundAudio() {
     scene.add(soup);
     
     console.log('Added kitchen table 2 with induction and soup pot at position:', kitchenBox.position);
+    setLoadingProgress(90);
   } catch (err) {
     console.error('Failed to load kitchen table 2.glb:', err);
   }
@@ -1803,19 +1854,9 @@ function resumeBackgroundAudio() {
 
   // Animation loop
   let prev = performance.now();
-  let overlayShown = false;
   const animate = t => {
     const dt = Math.min(0.05, (t - prev) / 1000);
     prev = t;
-    
-    // Show overlay after first frame renders (scene is ready)
-    if (!overlayShown && introOverlay) {
-      overlayShown = true;
-      // Small delay to ensure scene has rendered
-      setTimeout(() => {
-        showIntroOverlay();
-      }, 100);
-    }
 
     if (document.getElementById("paintWindow")?.style.display === "flex") {
       renderer.render(scene, camera);
@@ -1901,6 +1942,12 @@ function resumeBackgroundAudio() {
   if (typeof window.updateTableProgress === 'function') {
     window.updateTableProgress();
   }
+  
+  // Loading complete - hide loading screen and start animation
+  setLoadingProgress(100);
+  setTimeout(() => {
+    hideLoadingScreen();
+  }, 300);
   
   requestAnimationFrame(animate);
 })();

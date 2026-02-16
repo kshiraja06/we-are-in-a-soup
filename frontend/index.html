@@ -29,13 +29,21 @@
   </style>
 </head>
 <body>
-  <canvas id="canvas"></canvas>
+  <canvas id="canvas" style="opacity: 0;"></canvas>
+
+  <!-- Loading Screen -->
+  <div id="loadingScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #222; display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 20px;">
+    <div style="color: #fff; font-size: 1.2em; font-family: Georgia, serif;">preparing the kitchen...</div>
+    <div style="width: 200px; height: 8px; background: #444; border-radius: 4px; overflow: hidden;">
+      <div id="loadingBar" style="width: 0%; height: 100%; background: #d4a574; transition: width 0.3s ease;"></div>
+    </div>
+  </div>
 
   <!-- Proximity Dialogue Tooltip -->
   <div id="proximityDialogue" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 2em; font-weight: bold; pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 5000; text-align: center; text-shadow: 2px 2px 4px rgba(0,0,0,0.8), -2px -2px 4px rgba(0,0,0,0.8), 2px -2px 4px rgba(0,0,0,0.8), -2px 2px 4px rgba(0,0,0,0.8);"></div>
 
   <!-- Table Visit Progress Overlay -->
-  <div id="tableProgressOverlay" class="table-progress-overlay">
+  <div id="tableProgressOverlay" class="table-progress-overlay" style="display: none;">
     <div class="progress-label">Table Visits</div>
     <div class="progress-bar-small">
       <div id="tableProgressBar" class="progress-fill-small" style="width: 0%"></div>
@@ -71,14 +79,14 @@
         <div class="intro-tagline">a student run community kitchen reminding you to slow down.</div>
         <div class="intro-instructions">
           <p>use <strong>WASD</strong> keys to move around.</p>
-          <p style="font-size: 0.9em; margin-top: 20px;">click on objects in the kitchen. they're interactive!</p>
+          <p style="font-size: 0.9em; margin-top: 20px;">hint : some objects light up. click them!</p>
         </div>
         <button id="startButton" class="start-button">→</button>
       </div>
     </div>
   </div>
 
-  <div id="paintWindow" class="win hidden-init">
+  <div id="paintWindow" class="win hidden-init" style="display: none !important;">
     <div class="titlebar">
       <div class="title-left">
         <div class="icon-sq"></div>
@@ -123,7 +131,7 @@
     <div class="statusbar">Ready</div>
   </div>
 
-  <div id="galleryModal" class="modal hidden">
+  <div id="galleryModal" class="modal hidden" style="display: none !important;">
     <div class="modal-inner">
       <div class="modal-head">
         <h3>Saved Soups</h3>
@@ -133,7 +141,7 @@
     </div>
   </div>
 
-  <div id="bowlGalleryModal" class="modal hidden">
+  <div id="bowlGalleryModal" class="modal hidden" style="display: none !important;">
     <div class="modal-inner">
       <div class="modal-head">
         <h3>Saved Bowls</h3>
@@ -144,7 +152,7 @@
   </div>
 
   <!-- Glazing Window -->
-  <div id="glazingWindow" class="win hidden-init">
+  <div id="glazingWindow" class="win hidden-init" style="display: none !important;">
     <div class="titlebar">
       <div class="title-left">
         <div class="icon-sq"></div>
@@ -189,7 +197,7 @@
   </div>
 
   <!-- Cooking Table Window -->
-  <div id="cookingWindow" class="win hidden-init" style="position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 700px; z-index: 10000;">
+  <div id="cookingWindow" class="win hidden-init" style="position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 700px; z-index: 10000; display: none !important;">
     <div class="titlebar">
       <div class="title-left">
         <div class="icon-sq"></div>
@@ -234,7 +242,7 @@
   </div>
 
   <!-- About Poster Window -->
-  <div id="aboutWindow" class="win hidden-init" style="position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 600px; z-index: 10000; background: linear-gradient(135deg, #fde2e4 0%, #fef3c7 25%, #e0f2dd 50%, #d8aed8 75%, #cffafe 100%);">
+  <div id="aboutWindow" class="win hidden-init" style="position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 600px; z-index: 10000; background: linear-gradient(135deg, #fde2e4 0%, #fef3c7 25%, #e0f2dd 50%, #d8aed8 75%, #cffafe 100%); display: none !important;">
     <div class="titlebar" style="background: linear-gradient(90deg, #fbbf24, #f472b6, #c084fc, #86efac); border-bottom: 3px solid #1a1a1a; color: #1a1a1a;">
       <div class="title-left" style="font-family: 'Instrument Serif', serif; color: #1a1a1a; font-weight: bold; font-size: 18px; font-style: italic;">
         We Are in a Soup
@@ -281,7 +289,7 @@
   </div>
 
   <!-- Worry Box Window -->
-  <div id="worryWindow" class="win worry-window hidden-init" style="position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 600px; z-index: 10000;">
+  <div id="worryWindow" class="win worry-window hidden-init" style="position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 600px; z-index: 10000; display: none !important;">
     <div class="titlebar" style="background: #f5f0e8; border-bottom: 2px solid #d4a574; padding: 8px 12px; cursor: move;">
       <span style="flex: 1; font-family: 'Georgia', 'Libre Baskerville', serif; font-weight: bold; font-size: 18px; font-style: italic;">holding space</span>
       <button class="tbtn" id="worryMinBtn" title="Minimize" style="cursor: pointer;">_</button>
